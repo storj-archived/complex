@@ -8,7 +8,11 @@
       "serverPort": 8080,
       "serverOpts": {
         "certficate": null,
-        "key": null
+        "key": null,
+        "authorization": {
+          "username": "user",
+          "password": "pass"
+        }
       }
     }
   },
@@ -24,14 +28,15 @@
       "networkOpts": {
         "rpcPort": 4000,
         "rpcAddress": "127.0.0.1",
-        "doNotTraverseNat": true,
+        "doNotTraverseNat": false,
         "tunnelServerPort": 5000,
         "tunnelGatewayRange": {
           "min": 6000,
           "max": 6004
         },
         "maxTunnels": 5,
-        "seedList": []
+        "seedList": [],
+        "bridgeUri": "https://api.storj.io"
       }
     }
   },
@@ -47,14 +52,15 @@
       "networkOpts": {
         "rpcPort": 4001,
         "rpcAddress": "127.0.0.1",
-        "doNotTraverseNat": true,
+        "doNotTraverseNat": false,
         "tunnelServerPort": 5001,
         "tunnelGatewayRange": {
           "min": 6005,
           "max": 6009
         },
         "maxTunnels": 5,
-        "seedList": []
+        "seedList": [],
+        "bridgeUri": "https://api.storj.io"
       }
     }
   },
@@ -70,14 +76,15 @@
       "networkOpts": {
         "rpcPort": 4002,
         "rpcAddress": "127.0.0.1",
-        "doNotTraverseNat": true,
+        "doNotTraverseNat": false,
         "tunnelServerPort": 5002,
         "tunnelGatewayRange": {
           "min": 6010,
           "max": 6014
         },
         "maxTunnels": 5,
-        "seedList": []
+        "seedList": [],
+        "bridgeUri": "https://api.storj.io"
       }
     }
   }
