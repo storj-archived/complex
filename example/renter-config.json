@@ -1,0 +1,23 @@
+{
+    "type": "Renter",
+    "opts": {
+      "logLevel": 3,
+      "amqpUrl": "amqp://localhost",
+      "amqpOpts": {},
+      "mongoUrl": "mongodb://localhost:27017/__storj-complex-example",
+      "mongoOpts": {},
+      "networkPrivateKey": "network-private-key.example",
+      "networkOpts": {
+        "rpcPort": 4000,
+        "rpcAddress": "127.0.0.1",
+        "doNotTraverseNat": false,
+        "tunnelServerPort": 5000,
+        "tunnelGatewayRange": {
+          "min": 6000,
+          "max": 6004
+        },
+        "maxTunnels": 5,
+        "seedList": []
+      }
+    }
+  }

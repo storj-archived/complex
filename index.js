@@ -1,5 +1,8 @@
 'use strict';
 
+/** {@link module:complex/config} */
+module.exports.createConfig = require('./lib/config');
+
 /** {@link Landlord} */
 module.exports.createLandlord = require('./lib/landlord');
 

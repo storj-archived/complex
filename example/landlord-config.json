@@ -1,0 +1,13 @@
+{
+  "type": "Landlord",
+  "opts": {
+    "logLevel": 3,
+    "amqpUrl": "amqp://localhost",
+    "amqpOpts": {},
+    "serverPort": 8080,
+    "serverOpts": {
+      "certficate": null,
+      "key": null
+    }
+  }
+}
