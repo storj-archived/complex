@@ -34,6 +34,8 @@ storj-complex <path/to/config.json>
 
 ### Programmatic
 
+Set up a renter service and landlord to control it.
+
 ```js
 var complex = require('storj-complex');
 var landlord = complex.createLandlord({ /* landlord config */ });
@@ -55,6 +57,19 @@ renter.start(function(err) {
 // The pump out newline-terminated JSON strings for logging information
 landlord.pipe(process.stdout);
 renter.pipe(process.stdout);
+```
+
+Create a client to issue RPC commands to the landlord:
+
+```js
+var complex = require('storj-complex');
+var client = complex.createClient({ /* options */ });
+var contract = new storj.Contract({ /* contract data */ });
+
+// The client mimics storj-lib's RenterInterface
+client.getStorageOffer(contract, function(err, farmer, contract) {
+  // Storage offer received and accepted for the supplied farmer
+});
 ```
 
 License
