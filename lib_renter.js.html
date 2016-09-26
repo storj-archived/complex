@@ -286,7 +286,7 @@ Renter.prototype._handleWork = function(buffer) {
     })));
   });
 
-  this._logger.info('calling method: %s', data.method)
+  this._logger.info('calling method: %s', data.method);
 
   try {
     this.network[data.method].apply(
@@ -310,7 +310,6 @@ Renter.prototype._handleWork = function(buffer) {
  */
 Renter.prototype._handleAlert = function(buffer) {
   var self = this;
-  console.log(buffer, buffer.toString())
   var data = JSON.parse(buffer.toString());
 
   // If this is a response to us and we are waiting, call our callback
@@ -321,7 +320,7 @@ Renter.prototype._handleAlert = function(buffer) {
   // If this is a request and it's not allowed, do nothing
   if (Renter.SAFE_POOL_METHODS.indexOf(data.method) === -1) {
     return;
-  };
+  }
 
   // Add a callback function to the supplied params that only publishes
   // a response if the result is positive
@@ -377,7 +376,7 @@ Renter.prototype._onUnhandledOffer = function(contact, contract, resolver) {
  * Another renter resolved our unhandled offer
  * @private
  */
-Renter.prototype._onResolvedOffer = function(contact, contract) {
+Renter.prototype._onResolvedOffer = function(/* contact, contract */) {
   var callbackId = uuid.v4();
   var args = this._serializeArguments('acceptOffer', arguments);
 
@@ -395,6 +394,7 @@ Renter.prototype._onResolvedOffer = function(contact, contract) {
  * @returns {Array} args
  */
 Renter.prototype._deserializeArguments = function(method, args) {
+  /* jshint maxcomplexity:false */
   switch (method) {
     case 'getConsignmentPointer':
       args[0] = storj.Contact(args[0]);
@@ -447,6 +447,7 @@ Renter.prototype._deserializeArguments = function(method, args) {
  * @returns {Array} args
  */
 Renter.prototype._serializeArguments = function(method, args) {
+  /* jshint maxcomplexity:false */
   switch (method) {
     case 'getConsignmentPointer':
       break;

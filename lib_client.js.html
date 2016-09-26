@@ -121,6 +121,8 @@ Client.DEFAULTS = {
  * @private
  */
 Client.prototype._send = function(method, args, callback) {
+  var self = this;
+
   request.post(this._opts.rpcUrl, {
     id: uuid.v4(),
     method: method,
@@ -216,17 +218,17 @@ Client.prototype._serializeRequestArguments = function(method, args) {
 };
 
 /**
- * @see http://storj.github.io/core/RenterInterface.html#getConsignmentPointer__anchor
+ * @see http://storj.github.io/core/RenterInterface.html
  */
-Client.prototype.getConsignmentPointer = function(farmer, contract, audit, callback) {
-  assert(farmer instanceof storj.Contact, 'Invalid contact supplied');
-  assert(contract instanceof storj.Contract, 'Invalid contract supplied');
-  assert(audit instanceof storj.AuditStream, 'Invalid audit object supplied');
-  this._send('getConsignmentPointer', [farmer, contract, audit], callback);
+Client.prototype.getConsignmentPointer = function(f, c, a, callback) {
+  assert(f instanceof storj.Contact, 'Invalid contact supplied');
+  assert(c instanceof storj.Contract, 'Invalid contract supplied');
+  assert(a instanceof storj.AuditStream, 'Invalid audit object supplied');
+  this._send('getConsignmentPointer', [f, c, a], callback);
 };
 
 /**
- * @see http://storj.github.io/core/RenterInterface.html#getRetrievalPointer__anchor
+ * @see http://storj.github.io/core/RenterInterface.html
  */
 Client.prototype.getRetrievalPointer = function(farmer, contract, callback) {
   assert(farmer instanceof storj.Contact, 'Invalid contact supplied');
@@ -235,7 +237,7 @@ Client.prototype.getRetrievalPointer = function(farmer, contract, callback) {
 };
 
 /**
- * @see http://storj.github.io/core/RenterInterface.html#getMirrorNodes__anchor
+ * @see http://storj.github.io/core/RenterInterface.html
  */
 Client.prototype.getMirrorNodes = function(sources, destinations, callback) {
   assert(Array.isArray(sources), 'Invalid sources supplied');
@@ -250,7 +252,7 @@ Client.prototype.getMirrorNodes = function(sources, destinations, callback) {
 };
 
 /**
- * @see http://storj.github.io/core/RenterInterface.html#getStorageOffer__anchor
+ * @see http://storj.github.io/core/RenterInterface.html
  */
 Client.prototype.getStorageOffer = function(contract, blacklist, callback) {
   if (typeof blacklist === 'function') {
@@ -258,18 +260,18 @@ Client.prototype.getStorageOffer = function(contract, blacklist, callback) {
     blacklist = [];
   }
 
-  assert(contact instanceof storj.Contract, 'Invalid contract supplied');
+  assert(contract instanceof storj.Contract, 'Invalid contract supplied');
   assert(Array.isArray(blacklist), 'Invalid blacklist supplied');
-  this._send('getStorageOffer', [farmer, blacklist], callback);
+  this._send('getStorageOffer', [contract, blacklist], callback);
 };
 
 /**
- * @see http://storj.github.io/core/RenterInterface.html#getStorageProof__anchor
+ * @see http://storj.github.io/core/RenterInterface.html
  */
 Client.prototype.getStorageProof = function(farmer, item, callback) {
   assert(farmer instanceof storj.Contact, 'Invalid contact supplied');
   assert(item instanceof storj.StorageItem, 'Invalid storage item supplied');
-  this._send('getStorageProof', [farmer, item], callback)
+  this._send('getStorageProof', [farmer, item], callback);
 };
 
 module.exports = Client;
