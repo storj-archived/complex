@@ -75,7 +75,7 @@ client.getStorageOffer(contract, function(err, farmer, contract) {
 License
 -------
 
-Storj Complex - Manage many renter nodes with remote control capabilities
+Storj Complex - Manage many renter nodes with remote control capabilities  
 Copyright (C) 2016 Storj Labs, Inc 
 
 This program is free software: you can redistribute it and/or modify
