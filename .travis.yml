@@ -1,6 +1,9 @@
 language: node_js
 node_js:
   - "4.4.3"
+after_script:
+  - npm run coverage¬
+  - cat ./coverage/lcov.info | ./node_modules/.bin/coveralls
 services:
   - mongodb
   - rabbitmq

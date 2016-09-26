@@ -1,5 +1,5 @@
-Storj Complex
-=============
+[![Storj Complex](https://nodei.co/npm/storj-complex.png?downloads=true)](http://storj.github.io/complex)
+=========================================================================================================
 
 [![Build Status](https://img.shields.io/travis/Storj/complex.svg?style=flat-square)](https://travis-ci.org/Storj/complex)
 [![Coverage Status](https://img.shields.io/coveralls/Storj/complex.svg?style=flat-square)](https://coveralls.io/r/Storj/complex)
@@ -19,8 +19,16 @@ Prerequisites
 Installation
 ------------
 
+### Command Line Interface
+
 ```
 npm install -g storj-complex
+```
+
+### Programmatic
+
+```
+npm install storj-complex --save
 ```
 
 Usage
