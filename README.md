@@ -7,7 +7,7 @@
 [![License](https://img.shields.io/badge/license-AGPL3.0-blue.svg?style=flat-square)](https://raw.githubusercontent.com/Storj/complex/master/LICENSE)
 
 Manage many renter nodes with the same identity with remote control 
-capabilities! [Complete documentation can be found here](https://storj.github.io/complex).
+capabilities! [Complete documentation can be found here](https://storj.github.io/complex/).
 
 Prerequisites
 -------------
