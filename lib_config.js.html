@@ -1,0 +1,368 @@
+<!DOCTYPE html>
+
+<html lang="en">
+<head>
+	<meta charset="utf-8">
+	<meta name="viewport" content="width=device-width">
+	<title>Storj Complex Source: lib/config.js</title>
+
+	<!--[if lt IE 9]>
+	<script src="//html5shiv.googlecode.com/svn/trunk/html5.js"></script>
+	<![endif]-->
+
+	<script src="scripts/highlight.min.js"></script>
+
+	<link type="text/css" rel="stylesheet" href="styles/site.storj.css">
+
+</head>
+
+<body>
+
+<div class="navbar navbar-default navbar-fixed-top ">
+<div class="container">
+	<div class="navbar-header">
+		<a class="navbar-brand" style="background-image:url(img/storj-complex.svg)"  href="index.html">Storj Complex</a>
+		<button class="navbar-toggle" type="button" data-toggle="collapse" data-target="#topNavigation">
+			<span class="icon-bar"></span>
+			<span class="icon-bar"></span>
+			<span class="icon-bar"></span>
+        </button>
+	</div>
+	<div class="navbar-collapse collapse" id="topNavigation">
+		<ul class="nav navbar-nav">
+			
+			<li class="dropdown">
+				<a href="modules.list.html" class="dropdown-toggle" data-toggle="dropdown">Modules<b class="caret"></b></a>
+				<ul class="dropdown-menu ">
+					<li><a href="module-complex_config.html">complex/config</a></li>
+				</ul>
+			</li>
+			
+			<li class="dropdown">
+				<a href="classes.list.html" class="dropdown-toggle" data-toggle="dropdown">Classes<b class="caret"></b></a>
+				<ul class="dropdown-menu ">
+					<li><a href="Client.html">Client</a></li><li><a href="Landlord.html">Landlord</a></li><li><a href="module-complex_config-BaseConfig.html">complex/config~BaseConfig</a></li><li><a href="module-complex_config-LandlordConfig.html">complex/config~LandlordConfig</a></li><li><a href="module-complex_config-RenterConfig.html">complex/config~RenterConfig</a></li><li><a href="Renter.html">Renter</a></li>
+				</ul>
+			</li>
+			
+			<li class="dropdown">
+				<a href="global.html" class="dropdown-toggle" data-toggle="dropdown">Global<b class="caret"></b></a>
+				<ul class="dropdown-menu ">
+					<li><a href="global.html#createClient">createClient</a></li><li><a href="global.html#createConfig">createConfig</a></li><li><a href="global.html#createLandlord">createLandlord</a></li><li><a href="global.html#createRenter">createRenter</a></li>
+				</ul>
+			</li>
+			
+		</ul>
+		<div class="col-sm-3 col-md-4">
+            <form class="navbar-form" role="search">
+                <div class="input-group">
+                    <input type="text" class="form-control" placeholder="Search" name="q" id="search-input">
+                    <div class="input-group-btn">
+                        <button class="btn btn-primary" id="search-submit"><i class="glyphicon glyphicon-search"></i></button>
+                    </div>
+                </div>
+            </form>
+        </div>
+	</div>
+
+</div>
+</div>
+
+
+<div class="container" id="toc-content">
+<div class="row">
+
+	
+	<div class="col-md-12">
+	
+		<div id="main">
+			
+
+		<h1 class="page-title">Source: lib/config.js</h1>
+    
+<section>
+    <article>
+        <pre
+            class="sunlight-highlight-javascript ">/**
+ * @module complex/config
+ */
+
+'use strict';
+
+var fs = require('fs');
+var assert = require('assert');
+var merge = require('merge');
+var inherits = require('util').inherits;
+
+/**
+ * Abstract config for renters and landlords
+ * @constructor
+ * @param {Object} config
+ * @param {String} config.amqpUrl - The URL for RabbitMQ
+ * @param {Object} config.amqpOpts - Options to pass to Rabbit.js
+ * @param {Number} config.logLevel - Verbosity level for logging
+ */
+function BaseConfig(config) {
+  if (!(this instanceof BaseConfig)) {
+    return new BaseConfig(config);
+  }
+
+  this._ = {};
+
+  assert.ok(config, 'No config supplied');
+  assert(typeof config.logLevel === 'number', 'Invalid logLevel');
+  assert(typeof config.amqpUrl === 'string', 'Invalid amqpUrl');
+  assert(typeof config.amqpOpts === 'object', 'Invalid amqpOpts');
+
+  this._.logLevel = config.logLevel;
+  this._.amqpUrl = config.amqpUrl;
+  this._.amqpOpts = config.amqpOpts;
+}
+
+/**
+ * Returns an plain object
+ */
+BaseConfig.prototype.toObject = function() {
+  return Object.create(this._);
+};
+
+/**
+ * Config for renters
+ * @constructor
+ * @extends {BaseConfig}
+ * @param {Object} options
+ * @param {String} options.mongoUrl - The URL for the MongoDB
+ * @param {Object} options.mongoOpts - Options to pass to Mongoose
+ * @param {String} options.networkPrivateKey - The private key for the renter
+ * @param {Object} options.networkOpts - Options to pass to RenterInterface
+ */
+function RenterConfig(options) {
+  if (!(this instanceof RenterConfig)) {
+    return new RenterConfig(options);
+  }
+
+  BaseConfig.call(this, options);
+  assert(typeof options.mongoUrl === 'string', 'Invalid mongoUrl');
+  assert(typeof options.mongoOpts === 'object', 'Invalid mongoOpts');
+  assert(
+    typeof options.networkPrivateKey === 'string',
+    'Invalid networkPrivateKey'
+  );
+  assert(typeof options.networkOpts === 'object', 'Invalid networkOpts');
+
+  this._.networkPrivateKey = options.networkPrivateKey;
+  this._.networkOpts = options.networkOpts;
+  this._.mongoUrl = options.mongoUrl;
+  this._.mongoOpts = options.mongoOpts;
+}
+
+inherits(RenterConfig, BaseConfig);
+
+/**
+ * Config for landlords
+ * @constructor
+ * @extends {BaseConfig}
+ * @param {Object} options
+ * @param {Number} options.serverPort - The port to listen on
+ * @param {Object} options.serverOpts
+ * @param {String} options.serverOpts.certificate - PEM SSL certificate
+ * @param {String} options.serverOpts.key - PEM SSL key
+ */
+function LandlordConfig(options) {
+  if (!(this instanceof LandlordConfig)) {
+    return new LandlordConfig(options);
+  }
+
+  BaseConfig.call(this, options);
+  assert(typeof options.serverPort === 'number', 'Invalid serverPort');
+  assert(typeof options.serverOpts === 'object', 'Invalid serverOpts');
+
+  this._.serverPort = options.serverPort;
+  this._.serverOpts = options.serverOpts;
+  this._.serverOpts.authorization = options.serverOpts.authorization || {};
+}
+
+inherits(LandlordConfig, BaseConfig);
+
+/**
+ * Loads the appropriate config type
+ * @function
+ * @param {String} configFilePath - The path to the config file on disk
+ */
+module.exports= function(configFilePath) {
+  var configBuffer = fs.readFileSync(configFilePath);
+  var parsedConfig = JSON.parse(configBuffer.toString());
+
+  function _createConfig(config) {
+    assert(typeof config.type === 'string', 'Invalid type supplied');
+    assert(
+      ['Renter', 'Landlord'].indexOf(config.type) !== -1,
+      'Invalid type supplied'
+    );
+    assert(typeof config.opts === 'object', 'Invalid opts supplied');
+
+    switch (config.type) {
+      case 'Renter':
+        config = new RenterConfig(config.opts);
+        config._.networkPrivateKey = fs.readFileSync(
+          config._.networkPrivateKey
+        ).toString('utf8').split('\n').join('');
+        break;
+      case 'Landlord':
+        config = new LandlordConfig(config.opts);
+        if (config._.serverOpts.certificate) {
+          config._.serverOpts.certificate = fs.readFileSync(
+            config._.serverOpts.certificate
+          ).toString('utf8');
+        }
+        if (config._.serverOpts.key) {
+          config._.serverOpts.key = fs.readFileSync(
+            config._.serverOpts.key
+          ).toString('utf8');
+        }
+        break;
+      default:
+        // noop
+    }
+
+    return config;
+  }
+
+  if (!Array.isArray(parsedConfig)) {
+    return _createConfig(parsedConfig);
+  } else {
+    return parsedConfig.map(_createConfig);
+  }
+};
+
+module.exports.RenterConfig = RenterConfig;
+module.exports.LandlordConfig = LandlordConfig;
+module.exports.BaseConfig = BaseConfig;
+</pre>
+    </article>
+</section>
+
+
+
+
+
+		</div>
+	</div>
+
+	<div class="clearfix"></div>
+
+	
+
+</div>
+</div>
+
+<div class="modal fade" id="searchResults">
+  <div class="modal-dialog">
+    <div class="modal-content">
+      <div class="modal-header">
+        <button type="button" class="close" data-dismiss="modal" aria-label="Close"><span aria-hidden="true">&times;</span></button>
+        <h4 class="modal-title">Search results</h4>
+      </div>
+      <div class="modal-body"></div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-default" data-dismiss="modal">Close</button>
+      </div>
+    </div><!-- /.modal-content -->
+  </div><!-- /.modal-dialog -->
+</div>
+
+<footer>
+
+
+	<span class="copyright">
+	Copyright 2016 Storj Labs
+	</span>
+
+<span class="jsdoc-message">
+	Documentation generated by <a href="https://github.com/jsdoc3/jsdoc">JSDoc 3.4.1</a>
+	
+	using the <a href="https://github.com/docstrap/docstrap">DocStrap template</a>.
+</span>
+</footer>
+
+<script src="scripts/docstrap.lib.js"></script>
+<script src="scripts/toc.js"></script>
+<script type="text/javascript" src="scripts/fulltext-search-ui.js"></script>
+
+<script>
+$( function () {
+	$( "[id*='$']" ).each( function () {
+		var $this = $( this );
+
+		$this.attr( "id", $this.attr( "id" ).replace( "$", "__" ) );
+	} );
+
+	$( ".tutorial-section pre, .readme-section pre" ).each( function () {
+		var $this = $( this );
+
+		var example = $this.find( "code" );
+		exampleText = example.html();
+		var lang = /{@lang (.*?)}/.exec( exampleText );
+		if ( lang && lang[1] ) {
+			exampleText = exampleText.replace( lang[0], "" );
+			example.html( exampleText );
+			lang = lang[1];
+		} else {
+			var langClassMatch = example.parent()[0].className.match(/lang\-(\S+)/);
+			lang = langClassMatch ? langClassMatch[1] : "javascript";
+		}
+
+		if ( lang ) {
+
+			$this
+			.addClass( lang )
+			.addClass( "linenums" )
+			.html( example.html() );
+
+		}
+	} );
+
+	$('pre').each(function(i, block) {
+		hljs.highlightBlock(block);
+	});
+
+	$.catchAnchorLinks( {
+        navbarOffset: 10
+	} );
+	$( "#toc" ).toc( {
+		anchorName  : function ( i, heading, prefix ) {
+			var id = $( heading ).attr( "id" );
+			return id && id.replace(/\~/g, '-inner-').replace(/\./g, '-static-') || ( prefix + i );
+		},
+		selectors   : "#toc-content h1,#toc-content h2,#toc-content h3,#toc-content h4",
+		showAndHide : false,
+		smoothScrolling: true
+	} );
+
+	$( "#main span[id^='toc']" ).addClass( "toc-shim" );
+	$( '.dropdown-toggle' ).dropdown();
+
+    $( "table" ).each( function () {
+      var $this = $( this );
+      $this.addClass('table');
+    } );
+
+} );
+</script>
+
+
+
+<!--Navigation and Symbol Display-->
+
+
+<!--Google Analytics-->
+
+
+<script type="text/javascript">
+	$(document).ready(function() {
+		SearcherDisplay.init();
+	});
+</script>
+
+</body>
+</html>

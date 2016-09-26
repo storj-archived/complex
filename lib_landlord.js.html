@@ -1,0 +1,448 @@
+<!DOCTYPE html>
+
+<html lang="en">
+<head>
+	<meta charset="utf-8">
+	<meta name="viewport" content="width=device-width">
+	<title>Storj Complex Source: lib/landlord.js</title>
+
+	<!--[if lt IE 9]>
+	<script src="//html5shiv.googlecode.com/svn/trunk/html5.js"></script>
+	<![endif]-->
+
+	<script src="scripts/highlight.min.js"></script>
+
+	<link type="text/css" rel="stylesheet" href="styles/site.storj.css">
+
+</head>
+
+<body>
+
+<div class="navbar navbar-default navbar-fixed-top ">
+<div class="container">
+	<div class="navbar-header">
+		<a class="navbar-brand" style="background-image:url(img/storj-complex.svg)"  href="index.html">Storj Complex</a>
+		<button class="navbar-toggle" type="button" data-toggle="collapse" data-target="#topNavigation">
+			<span class="icon-bar"></span>
+			<span class="icon-bar"></span>
+			<span class="icon-bar"></span>
+        </button>
+	</div>
+	<div class="navbar-collapse collapse" id="topNavigation">
+		<ul class="nav navbar-nav">
+			
+			<li class="dropdown">
+				<a href="modules.list.html" class="dropdown-toggle" data-toggle="dropdown">Modules<b class="caret"></b></a>
+				<ul class="dropdown-menu ">
+					<li><a href="module-complex_config.html">complex/config</a></li>
+				</ul>
+			</li>
+			
+			<li class="dropdown">
+				<a href="classes.list.html" class="dropdown-toggle" data-toggle="dropdown">Classes<b class="caret"></b></a>
+				<ul class="dropdown-menu ">
+					<li><a href="Client.html">Client</a></li><li><a href="Landlord.html">Landlord</a></li><li><a href="module-complex_config-BaseConfig.html">complex/config~BaseConfig</a></li><li><a href="module-complex_config-LandlordConfig.html">complex/config~LandlordConfig</a></li><li><a href="module-complex_config-RenterConfig.html">complex/config~RenterConfig</a></li><li><a href="Renter.html">Renter</a></li>
+				</ul>
+			</li>
+			
+			<li class="dropdown">
+				<a href="global.html" class="dropdown-toggle" data-toggle="dropdown">Global<b class="caret"></b></a>
+				<ul class="dropdown-menu ">
+					<li><a href="global.html#createClient">createClient</a></li><li><a href="global.html#createConfig">createConfig</a></li><li><a href="global.html#createLandlord">createLandlord</a></li><li><a href="global.html#createRenter">createRenter</a></li>
+				</ul>
+			</li>
+			
+		</ul>
+		<div class="col-sm-3 col-md-4">
+            <form class="navbar-form" role="search">
+                <div class="input-group">
+                    <input type="text" class="form-control" placeholder="Search" name="q" id="search-input">
+                    <div class="input-group-btn">
+                        <button class="btn btn-primary" id="search-submit"><i class="glyphicon glyphicon-search"></i></button>
+                    </div>
+                </div>
+            </form>
+        </div>
+	</div>
+
+</div>
+</div>
+
+
+<div class="container" id="toc-content">
+<div class="row">
+
+	
+	<div class="col-md-12">
+	
+		<div id="main">
+			
+
+		<h1 class="page-title">Source: lib/landlord.js</h1>
+    
+<section>
+    <article>
+        <pre
+            class="sunlight-highlight-javascript ">'use strict';
+
+var restify = require('restify');
+var storj = require('storj-lib');
+var ReadableStream = require('readable-stream');
+var inherits = require('util').inherits;
+var rabbitmq = require('rabbit.js');
+var Logger = require('kad-logger-json');
+var uuid = require('node-uuid');
+var merge = require('merge');
+var assert = require('assert');
+var LandlordConfig = require('./config').LandlordConfig;
+
+/**
+ * Creates an RPC server for issuing work to a renter pool
+ * @constructor
+ * @param {Object} options
+ * @param {Number} options.serverPort - The port to listen on
+ * @param {Object} options.serverOpts - Options to pass wot Restify server
+ * @param {String} options.amqpUrl - The RabbitMQ server URL
+ * @param {Object} options.amqpOpts - Option to pass to RabbitMQ context
+ * @param {Number} options.logLevel - The verbosity level for logging
+ */
+function Landlord(options) {
+  if (!(this instanceof Landlord)) {
+    return new Landlord(options);
+  }
+
+  this._opts = options instanceof LandlordConfig ?
+               options.toObject() :
+               options;
+  this._logger = new Logger(this._opts.logLevel);
+  this._pendingResponses = {};
+
+  this.server = restify.createServer(merge({
+    name: 'Storj Complex',
+    version: require('../package.json').version
+  }, this._opts.serverOpts));
+
+  this._bindServerRoutes();
+  ReadableStream.call(this);
+  this._logger.on('data', this.push.bind(this));
+}
+
+inherits(Landlord, ReadableStream);
+
+Landlord.REQUEST_TIMEOUT = 30000;
+
+/**
+ * @private
+ */
+Landlord.prototype._read = storj.utils.noop;
+
+/**
+ * Binds the server routes
+ * @private
+ */
+Landlord.prototype._bindServerRoutes = function() {
+  this._logger.info('binding rpc server routes');
+  this.server.use(restify.authorizationParser());
+  this.server.use(restify.bodyParser());
+  this.server.post('/', this._handleJsonRpcRequest.bind(this));
+};
+
+/**
+ * Starts the landlord service
+ * @param {Landlord~startCallback}
+ */
+Landlord.prototype.start = function(callback) {
+  var self = this;
+
+  // Start our RPC server
+  this._logger.info('starting rpc server on port %s', this._opts.serverPort);
+  this.server.listen(this._opts.serverPort);
+
+  // Set up our RabbitMQ context
+  this._amqpContext = rabbitmq.createContext(
+    this._opts.amqpUrl,
+    this._opts.amqpOpts
+  );
+
+  // When our context is good, set up our subscriptions
+  this._logger.info('opening connection to rabbitmq');
+  this._amqpContext.on('ready', this._initMessageBus.bind(this));
+
+  // When we are all connected, fire the callback
+  this.once('ready', function() {
+    self._logger.info('landlord is connected and listening');
+    this.removeAllListeners('error');
+    callback();
+  });
+
+  // Otherwise bubble any errors
+  this.once('error', function(err) {
+    this.removeAllListeners('ready');
+    callback(err);
+  });
+};
+/**
+ * @callback Landlord~startCallback
+ * @param {Error} [error]
+ */
+
+/**
+ * Initialize the rabbitmq message bus
+ * @private
+ */
+Landlord.prototype._initMessageBus = function() {
+  this._logger.info('initializing message bus');
+
+  // Setup our amqp sockets
+  this.publisher = this._amqpContext.socket('PUBLISH');
+  this.subscriber = this._amqpContext.socket('SUBSCRIBE');
+  this.pusher = this._amqpContext.socket('PUSH');
+
+  // Connect to our renter minion and listen for finished work
+  this.publisher.connect('pool');
+  this.subscriber.connect('work.close');
+  this.pusher.connect('work.open');
+
+  // Set up handlers for receiving work
+  // Set up handlers for renter alerts
+  this.subscriber.on('data', this._handleWorkResult.bind(this));
+  this.emit('ready');
+};
+
+/**
+ * Handles an incoming JSON-RPC request
+ * @private
+ */
+Landlord.prototype._handleJsonRpcRequest = function(req, res) {
+  var self = this;
+  var user = req.authorization.basic.username;
+  var pass = req.authorization.basic.password;
+  var auth = this._opts.serverOpts.authorization;
+
+  this._logger.info('handling rpc message');
+
+  // Make sure that the auth credentials match what's configured
+  if (!(auth.username === user &amp;&amp; auth.password === pass)) {
+    this._logger.warn('unauthorized rpc attempt');
+    return res.send(new restify.errors.UnauthorizedError());
+  }
+
+  // Make sure this is a valid JSON RPC request
+  if (!this._isValidJsonRpcRequest(req.body)) {
+    this._logger.warn('invalid rpc message received');
+    return res.send(new restify.errors.BadRequestError());
+  }
+
+  // Keep track of the response object for later
+  this._pendingResponses[req.body.id] = res;
+
+  // Add work to the renter pool
+  this._logger.info('writing to worker pool');
+  this._logger.debug('rpc: %j', req.body);
+  this.pusher.write(new Buffer(JSON.stringify(req.body)));
+
+  // If work isn't completed in time, respond with an error
+  setTimeout(function() {
+    if (!self._pendingResponses[req.body.id]) {
+      return;
+    }
+
+    self._logger.warn('job %s timed out', req.body.id);
+    self._pendingResponses[req.body.id].send(
+      new restify.errors.RequestTimeoutError()
+    );
+
+    delete self._pendingResponses[req.body.id];
+  }, Landlord.REQUEST_TIMEOUT);
+};
+
+/**
+ * Validates a JSON-RPC request
+ * @private
+ */
+Landlord.prototype._isValidJsonRpcRequest = function(body) {
+  try {
+    assert(typeof body.id === 'string');
+    assert(Array.isArray(body.params));
+    assert(typeof body.method === 'string');
+  } catch (err) {
+    return false;
+  }
+
+  return true;
+};
+
+/**
+ * Handle the result of some work completed
+ * @private
+ */
+Landlord.prototype._handleWorkResult = function(buffer) {
+  var self = this;
+  var data = JSON.parse(buffer.toString());
+
+  // If this response already timed out do nothing
+  if (!self._pendingResponses[data.id]) {
+    return this._logger.warn('job %s completed late', data.id);
+  }
+
+  // If we got error back, then send a error code
+  if (data.error) {
+    self._logger.warn('error returned from work result on job %s', data.id);
+    self._logger.debug('error result: %j', data);
+    return self._pendingResponses[data.id].send(
+      new restify.errors.InternalServerError(data.error.message)
+    );
+  }
+
+  data.result = this._objectToArray(data.result);
+
+  // Otherwise forward the result and delete the reference
+  self._logger.info('job %s completed successfully', data.id);
+  self._logger.debug('job result: %j', data);
+  self._pendingResponses[data.id].send(data);
+  delete self._pendingResponses[data.id];
+};
+
+/**
+ * Convert data.result into a actual array
+ * @private
+ */
+Landlord.prototype._objectToArray = function(obj) {
+  var args = [];
+
+  for (var i = 0; i &lt; Object.keys(obj).length; i++) {
+    args[i] = obj[i];
+  }
+
+  return args;
+};
+
+module.exports = Landlord;
+</pre>
+    </article>
+</section>
+
+
+
+
+
+		</div>
+	</div>
+
+	<div class="clearfix"></div>
+
+	
+
+</div>
+</div>
+
+<div class="modal fade" id="searchResults">
+  <div class="modal-dialog">
+    <div class="modal-content">
+      <div class="modal-header">
+        <button type="button" class="close" data-dismiss="modal" aria-label="Close"><span aria-hidden="true">&times;</span></button>
+        <h4 class="modal-title">Search results</h4>
+      </div>
+      <div class="modal-body"></div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-default" data-dismiss="modal">Close</button>
+      </div>
+    </div><!-- /.modal-content -->
+  </div><!-- /.modal-dialog -->
+</div>
+
+<footer>
+
+
+	<span class="copyright">
+	Copyright 2016 Storj Labs
+	</span>
+
+<span class="jsdoc-message">
+	Documentation generated by <a href="https://github.com/jsdoc3/jsdoc">JSDoc 3.4.1</a>
+	
+	using the <a href="https://github.com/docstrap/docstrap">DocStrap template</a>.
+</span>
+</footer>
+
+<script src="scripts/docstrap.lib.js"></script>
+<script src="scripts/toc.js"></script>
+<script type="text/javascript" src="scripts/fulltext-search-ui.js"></script>
+
+<script>
+$( function () {
+	$( "[id*='$']" ).each( function () {
+		var $this = $( this );
+
+		$this.attr( "id", $this.attr( "id" ).replace( "$", "__" ) );
+	} );
+
+	$( ".tutorial-section pre, .readme-section pre" ).each( function () {
+		var $this = $( this );
+
+		var example = $this.find( "code" );
+		exampleText = example.html();
+		var lang = /{@lang (.*?)}/.exec( exampleText );
+		if ( lang && lang[1] ) {
+			exampleText = exampleText.replace( lang[0], "" );
+			example.html( exampleText );
+			lang = lang[1];
+		} else {
+			var langClassMatch = example.parent()[0].className.match(/lang\-(\S+)/);
+			lang = langClassMatch ? langClassMatch[1] : "javascript";
+		}
+
+		if ( lang ) {
+
+			$this
+			.addClass( lang )
+			.addClass( "linenums" )
+			.html( example.html() );
+
+		}
+	} );
+
+	$('pre').each(function(i, block) {
+		hljs.highlightBlock(block);
+	});
+
+	$.catchAnchorLinks( {
+        navbarOffset: 10
+	} );
+	$( "#toc" ).toc( {
+		anchorName  : function ( i, heading, prefix ) {
+			var id = $( heading ).attr( "id" );
+			return id && id.replace(/\~/g, '-inner-').replace(/\./g, '-static-') || ( prefix + i );
+		},
+		selectors   : "#toc-content h1,#toc-content h2,#toc-content h3,#toc-content h4",
+		showAndHide : false,
+		smoothScrolling: true
+	} );
+
+	$( "#main span[id^='toc']" ).addClass( "toc-shim" );
+	$( '.dropdown-toggle' ).dropdown();
+
+    $( "table" ).each( function () {
+      var $this = $( this );
+      $this.addClass('table');
+    } );
+
+} );
+</script>
+
+
+
+<!--Navigation and Symbol Display-->
+
+
+<!--Google Analytics-->
+
+
+<script type="text/javascript">
+	$(document).ready(function() {
+		SearcherDisplay.init();
+	});
+</script>
+
+</body>
+</html>

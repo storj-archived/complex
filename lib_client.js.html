@@ -1,0 +1,403 @@
+<!DOCTYPE html>
+
+<html lang="en">
+<head>
+	<meta charset="utf-8">
+	<meta name="viewport" content="width=device-width">
+	<title>Storj Complex Source: lib/client.js</title>
+
+	<!--[if lt IE 9]>
+	<script src="//html5shiv.googlecode.com/svn/trunk/html5.js"></script>
+	<![endif]-->
+
+	<script src="scripts/highlight.min.js"></script>
+
+	<link type="text/css" rel="stylesheet" href="styles/site.storj.css">
+
+</head>
+
+<body>
+
+<div class="navbar navbar-default navbar-fixed-top ">
+<div class="container">
+	<div class="navbar-header">
+		<a class="navbar-brand" style="background-image:url(img/storj-complex.svg)"  href="index.html">Storj Complex</a>
+		<button class="navbar-toggle" type="button" data-toggle="collapse" data-target="#topNavigation">
+			<span class="icon-bar"></span>
+			<span class="icon-bar"></span>
+			<span class="icon-bar"></span>
+        </button>
+	</div>
+	<div class="navbar-collapse collapse" id="topNavigation">
+		<ul class="nav navbar-nav">
+			
+			<li class="dropdown">
+				<a href="modules.list.html" class="dropdown-toggle" data-toggle="dropdown">Modules<b class="caret"></b></a>
+				<ul class="dropdown-menu ">
+					<li><a href="module-complex_config.html">complex/config</a></li>
+				</ul>
+			</li>
+			
+			<li class="dropdown">
+				<a href="classes.list.html" class="dropdown-toggle" data-toggle="dropdown">Classes<b class="caret"></b></a>
+				<ul class="dropdown-menu ">
+					<li><a href="Client.html">Client</a></li><li><a href="Landlord.html">Landlord</a></li><li><a href="module-complex_config-BaseConfig.html">complex/config~BaseConfig</a></li><li><a href="module-complex_config-LandlordConfig.html">complex/config~LandlordConfig</a></li><li><a href="module-complex_config-RenterConfig.html">complex/config~RenterConfig</a></li><li><a href="Renter.html">Renter</a></li>
+				</ul>
+			</li>
+			
+			<li class="dropdown">
+				<a href="global.html" class="dropdown-toggle" data-toggle="dropdown">Global<b class="caret"></b></a>
+				<ul class="dropdown-menu ">
+					<li><a href="global.html#createClient">createClient</a></li><li><a href="global.html#createConfig">createConfig</a></li><li><a href="global.html#createLandlord">createLandlord</a></li><li><a href="global.html#createRenter">createRenter</a></li>
+				</ul>
+			</li>
+			
+		</ul>
+		<div class="col-sm-3 col-md-4">
+            <form class="navbar-form" role="search">
+                <div class="input-group">
+                    <input type="text" class="form-control" placeholder="Search" name="q" id="search-input">
+                    <div class="input-group-btn">
+                        <button class="btn btn-primary" id="search-submit"><i class="glyphicon glyphicon-search"></i></button>
+                    </div>
+                </div>
+            </form>
+        </div>
+	</div>
+
+</div>
+</div>
+
+
+<div class="container" id="toc-content">
+<div class="row">
+
+	
+	<div class="col-md-12">
+	
+		<div id="main">
+			
+
+		<h1 class="page-title">Source: lib/client.js</h1>
+    
+<section>
+    <article>
+        <pre
+            class="sunlight-highlight-javascript ">'use strict';
+
+var request = require('request');
+var assert = require('assert');
+var storj = require('storj-lib');
+var uuid = require('node-uuid');
+var merge = require('merge');
+
+/**
+ * Creates a RPC client for communicating with a {@link Landlord}
+ * @constructor
+ * @param {Object} options
+ * @param {String} options.rpcUrl - The URL of the Landlord RPC server
+ * @param {String} options.rpcUser - Authorization username
+ * @param {String} options.rpcPassword - Authorization password
+ */
+function Client(options) {
+  if (!(this instanceof Client)) {
+    return new Client(options);
+  }
+
+  this._opts = merge(Object.create(Client.DEFAULTS), options);
+}
+
+Client.DEFAULTS = {
+  rpcUrl: 'http://localhost:8080',
+  rpcUser: 'user',
+  rpcPassword: 'pass'
+};
+
+/**
+ * Sends the JSON-RPC message and handles the response
+ * @param {String} method
+ * @param {Array} args
+ * @param {Function} callback
+ * @private
+ */
+Client.prototype._send = function(method, args, callback) {
+  request.post(this._opts.rpcUrl, {
+    id: uuid.v4(),
+    method: method,
+    params: this._serializeRequestArguments(method, args)
+  }, function(err, body) {
+    if (err) {
+      return callback(err);
+    }
+
+    if (body.error) {
+      return callback(new Error(body.error.message));
+    }
+
+    callback.apply(
+      null,
+      self._deserializeResponseArguments(method, body.result)
+    );
+  });
+};
+
+/**
+ * Converts response params into storj-lib objects
+ * @param {String} method
+ * @param {Array} arguments
+ * @returns {Array}
+ */
+Client.prototype._deserializeResponseArguments = function(method, args) {
+  switch (method) {
+    case 'getStorageOffer':
+      args[1] = storj.Contact(args[1]);
+      args[2] = storj.Contract.fromObject(args[2]);
+      break;
+    case 'getStorageProof':
+      break;
+    case 'getConsignmentPointer':
+      args[1] = storj.DataChannelPointer(
+        storj.Contact(args[1].farmer),
+        args[1].hash,
+        args[1].token,
+        args[1].operation
+      );
+      break;
+    case 'getRetrievalPointer':
+      args[1] = storj.DataChannelPointer(
+        storj.Contact(args[1].farmer),
+        args[1].hash,
+        args[1].token,
+        args[1].operation
+      );
+      break;
+    case 'getMirrorNodes':
+      args[1] = args[1].map(function(c) {
+        return storj.Contact(c);
+      });
+      break;
+    default:
+      // noop
+  }
+
+  return args;
+};
+
+/**
+ * Converts storj-lib objects into request params
+ * @param {String} method
+ * @param {Array} arguments
+ * @returns {Array}
+ */
+Client.prototype._serializeRequestArguments = function(method, args) {
+  switch (method) {
+    case 'getStorageOffer':
+      args[0] = args[0].toObject();
+      break;
+    case 'getStorageProof':
+      break;
+    case 'getConsignmentPointer':
+      args[1] = args[1].toObject();
+      args[2] = {
+        challenges: args[2].getPrivateRecord().challenges,
+        tree: args[2].getPublicRecord()
+      };
+      break;
+    case 'getRetrievalPointer':
+      args[1] = args[1].toObject();
+      break;
+    case 'getMirrorNodes':
+      break;
+    default:
+      // noop
+  }
+
+  return args;
+};
+
+/**
+ * @see http://storj.github.io/core/RenterInterface.html#getConsignmentPointer__anchor
+ */
+Client.prototype.getConsignmentPointer = function(farmer, contract, audit, callback) {
+  assert(farmer instanceof storj.Contact, 'Invalid contact supplied');
+  assert(contract instanceof storj.Contract, 'Invalid contract supplied');
+  assert(audit instanceof storj.AuditStream, 'Invalid audit object supplied');
+  this._send('getConsignmentPointer', [farmer, contract, audit], callback);
+};
+
+/**
+ * @see http://storj.github.io/core/RenterInterface.html#getRetrievalPointer__anchor
+ */
+Client.prototype.getRetrievalPointer = function(farmer, contract, callback) {
+  assert(farmer instanceof storj.Contact, 'Invalid contact supplied');
+  assert(contract instanceof storj.Contract, 'Invalid contract supplied');
+  this._send('getRetrievalPointer', [farmer, contract], callback);
+};
+
+/**
+ * @see http://storj.github.io/core/RenterInterface.html#getMirrorNodes__anchor
+ */
+Client.prototype.getMirrorNodes = function(sources, destinations, callback) {
+  assert(Array.isArray(sources), 'Invalid sources supplied');
+  assert(Array.isArray(destinations), 'Invalid destinations supplied');
+  sources.forEach(function(source) {
+    assert(source instanceof storj.DataChannelPointer, 'Invalid pointer');
+  });
+  destinations.forEach(function(dest) {
+    assert(dest instanceof storj.Contact, 'Invalid contact');
+  });
+  this._send('getMirrorNodes', [sources, destinations], callback);
+};
+
+/**
+ * @see http://storj.github.io/core/RenterInterface.html#getStorageOffer__anchor
+ */
+Client.prototype.getStorageOffer = function(contract, blacklist, callback) {
+  if (typeof blacklist === 'function') {
+    callback = blacklist;
+    blacklist = [];
+  }
+
+  assert(contact instanceof storj.Contract, 'Invalid contract supplied');
+  assert(Array.isArray(blacklist), 'Invalid blacklist supplied');
+  this._send('getStorageOffer', [farmer, blacklist], callback);
+};
+
+/**
+ * @see http://storj.github.io/core/RenterInterface.html#getStorageProof__anchor
+ */
+Client.prototype.getStorageProof = function(farmer, item, callback) {
+  assert(farmer instanceof storj.Contact, 'Invalid contact supplied');
+  assert(item instanceof storj.StorageItem, 'Invalid storage item supplied');
+  this._send('getStorageProof', [farmer, item], callback)
+};
+
+module.exports = Client;
+</pre>
+    </article>
+</section>
+
+
+
+
+
+		</div>
+	</div>
+
+	<div class="clearfix"></div>
+
+	
+
+</div>
+</div>
+
+<div class="modal fade" id="searchResults">
+  <div class="modal-dialog">
+    <div class="modal-content">
+      <div class="modal-header">
+        <button type="button" class="close" data-dismiss="modal" aria-label="Close"><span aria-hidden="true">&times;</span></button>
+        <h4 class="modal-title">Search results</h4>
+      </div>
+      <div class="modal-body"></div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-default" data-dismiss="modal">Close</button>
+      </div>
+    </div><!-- /.modal-content -->
+  </div><!-- /.modal-dialog -->
+</div>
+
+<footer>
+
+
+	<span class="copyright">
+	Copyright 2016 Storj Labs
+	</span>
+
+<span class="jsdoc-message">
+	Documentation generated by <a href="https://github.com/jsdoc3/jsdoc">JSDoc 3.4.1</a>
+	
+	using the <a href="https://github.com/docstrap/docstrap">DocStrap template</a>.
+</span>
+</footer>
+
+<script src="scripts/docstrap.lib.js"></script>
+<script src="scripts/toc.js"></script>
+<script type="text/javascript" src="scripts/fulltext-search-ui.js"></script>
+
+<script>
+$( function () {
+	$( "[id*='$']" ).each( function () {
+		var $this = $( this );
+
+		$this.attr( "id", $this.attr( "id" ).replace( "$", "__" ) );
+	} );
+
+	$( ".tutorial-section pre, .readme-section pre" ).each( function () {
+		var $this = $( this );
+
+		var example = $this.find( "code" );
+		exampleText = example.html();
+		var lang = /{@lang (.*?)}/.exec( exampleText );
+		if ( lang && lang[1] ) {
+			exampleText = exampleText.replace( lang[0], "" );
+			example.html( exampleText );
+			lang = lang[1];
+		} else {
+			var langClassMatch = example.parent()[0].className.match(/lang\-(\S+)/);
+			lang = langClassMatch ? langClassMatch[1] : "javascript";
+		}
+
+		if ( lang ) {
+
+			$this
+			.addClass( lang )
+			.addClass( "linenums" )
+			.html( example.html() );
+
+		}
+	} );
+
+	$('pre').each(function(i, block) {
+		hljs.highlightBlock(block);
+	});
+
+	$.catchAnchorLinks( {
+        navbarOffset: 10
+	} );
+	$( "#toc" ).toc( {
+		anchorName  : function ( i, heading, prefix ) {
+			var id = $( heading ).attr( "id" );
+			return id && id.replace(/\~/g, '-inner-').replace(/\./g, '-static-') || ( prefix + i );
+		},
+		selectors   : "#toc-content h1,#toc-content h2,#toc-content h3,#toc-content h4",
+		showAndHide : false,
+		smoothScrolling: true
+	} );
+
+	$( "#main span[id^='toc']" ).addClass( "toc-shim" );
+	$( '.dropdown-toggle' ).dropdown();
+
+    $( "table" ).each( function () {
+      var $this = $( this );
+      $this.addClass('table');
+    } );
+
+} );
+</script>
+
+
+
+<!--Navigation and Symbol Display-->
+
+
+<!--Google Analytics-->
+
+
+<script type="text/javascript">
+	$(document).ready(function() {
+		SearcherDisplay.init();
+	});
+</script>
+
+</body>
+</html>
