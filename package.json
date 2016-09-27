@@ -33,14 +33,14 @@
     "commander": "^2.9.0",
     "kad-logger-json": "^0.1.2",
     "merge": "^1.2.0",
-    "mongoose": "^4.6.1",
     "node-uuid": "^1.4.7",
     "rabbit.js": "^0.4.4",
     "readable-stream": "^2.1.5",
     "request": "^2.75.0",
     "restify": "^4.1.1",
     "storj-lib": "^4.0.0-rc.5",
-    "storj-mongodb-adapter": "^1.0.1"
+    "storj-mongodb-adapter": "^1.0.1",
+    "storj-service-storage-models": "^1.0.1"
   },
   "devDependencies": {
     "chai": "^3.5.0",
