@@ -38,7 +38,7 @@
     "readable-stream": "^2.1.5",
     "request": "^2.75.0",
     "restify": "^4.1.1",
-    "storj-lib": "^4.0.0-rc.6",
+    "storj-lib": "^4.0.0-rc.7",
     "storj-mongodb-adapter": "^1.0.2",
     "storj-service-storage-models": "^1.0.1"
   },
