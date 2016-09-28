@@ -18,7 +18,8 @@
         },
         "maxTunnels": 5,
         "seedList": [],
-        "bridgeUri": "https://api.storj.io"
+        "bridgeUri": "https://api.storj.io",
+        "maxConnections": 250
       }
     }
   }
