@@ -53,5 +53,12 @@
     "mocha": "^3.0.2",
     "proxyquire": "^1.7.10",
     "sinon": "^1.17.6"
+  },
+  "devopsBase": {
+    "npmLinkDeps": {
+      "storj-lib": "core",
+      "storj-mongodb-adapter": "mongodb-adapter",
+      "storj-service-storage-models": "service-storage-models"
+    }
   }
 }
