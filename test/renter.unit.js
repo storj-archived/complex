@@ -94,7 +94,6 @@ describe('Renter', function() {
       expect(contract.sign.args[0][1]).to.equal(key);
     });
 
-
   });
 
 });
