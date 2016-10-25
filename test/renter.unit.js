@@ -1,5 +1,6 @@
 'use strict';
 
+var fs = require('fs');
 var sinon = require('sinon');
 var expect = require('chai').expect;
 var HDKey = require('hdkey');
@@ -18,6 +19,10 @@ var nodeID = '4abb9b37bd4cbea611c480eb967ad96bf2e3b850';
 describe('Renter', function() {
 
   describe('@constructor', function() {
+    var sandbox = sinon.sandbox.create();
+    afterEach(function() {
+      sandbox.restore();
+    });
 
     it('will construct new instance (with/without new)', function() {
       var options = {
@@ -27,6 +32,40 @@ describe('Renter', function() {
       var renter2 = new complex.createRenter(options);
       expect(renter).to.be.instanceOf(complex.createRenter);
       expect(renter2).to.be.instanceOf(complex.createRenter);
+    });
+
+    it('will contruct with a config object', function() {
+      var config = {
+        type: 'Renter',
+        opts: {
+          logLevel: 3,
+          amqpUrl: 'amqp://localhost',
+          amqpOpts: {},
+          mongoUrl: 'mongodb://localhost:27017/storj-test',
+          mongoOpts: {},
+          networkPrivateKey: '/tmp/storj-complex/private.key',
+          networkOpts: {
+            rpcPort: 4000,
+            rpcAddress: 'localhost',
+            doNotTraverseNat: true,
+            tunnelServerPort: 5000,
+            tunnelGatewayRange: {
+              min: 0,
+              max: 0
+            },
+            maxTunnels: 0,
+            seedList: [],
+            bridgeUri: null,
+            maxConnections: 250
+          }
+        }
+      };
+      sandbox.stub(fs, 'readFileSync');
+      fs.readFileSync.onFirstCall().returns(JSON.stringify(config));
+      fs.readFileSync.onSecondCall().returns(key);
+      var conf = complex.createConfig('/tmp/someconfig.json');
+      var renter = complex.createRenter(conf);
+      expect(renter.keyPair.getPrivateKey()).to.equal(key);
     });
 
     it('will construct with hd private key', function() {
