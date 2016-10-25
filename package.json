@@ -8,7 +8,7 @@
   },
   "scripts": {
     "linter": "./node_modules/.bin/jshint --config .jshintrc ./index.js ./lib ./test",
-    "testsuite": "STORJ_ALLOW_LOOPBACK=1 NODE_ENV=test _mocha test/**",
+    "testsuite": "STORJ_ALLOW_LOOPBACK=1 NODE_ENV=test _mocha test/**/*.js",
     "coverage": "STORJ_ALLOW_LOOPBACK=1 NODE_ENV=test ./node_modules/.bin/istanbul cover ./node_modules/.bin/_mocha -- --recursive",
     "test": "npm run testsuite && npm run linter",
     "make-docs": "./node_modules/.bin/jsdoc index.js lib -r -R README.md -u ./doc -c .jsdoc.json --verbose -d ./jsdoc",
@@ -31,6 +31,7 @@
   "homepage": "https://github.com/storj/complex#readme",
   "dependencies": {
     "commander": "^2.9.0",
+    "hdkey": "^0.7.1",
     "kad-logger-json": "^0.1.2",
     "merge": "^1.2.0",
     "node-uuid": "^1.4.7",
@@ -38,6 +39,7 @@
     "readable-stream": "^2.1.5",
     "request": "^2.75.0",
     "restify": "^4.1.1",
+    "secp256k1": "^3.2.0",
     "storj-lib": "^4.1.0",
     "storj-mongodb-adapter": "^2.0.0",
     "storj-service-storage-models": "^2.2.0"
