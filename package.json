@@ -58,7 +58,7 @@
   "devopsBase": {
     "npmLinkDeps": {
       "storj-lib": "core",
-      "storj-mongodb-adapter": "mongodb-adapter",
+      "storj-mongodb-adapter": "mongodb-adapter@master",
       "storj-service-storage-models": "service-storage-models"
     }
   }
