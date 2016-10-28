@@ -11,6 +11,8 @@ var seed = 'a0c42a9c3ac6abf2ba6a9946ae83af18f51bf1c9fa7dacc4c92513cc4dd015834' +
 var key = '08d1015861dd2c09ab36e97a8ecdbae26f20baabede6d618f6fb62904522c7fa';
 var masterKey = HDKey.fromMasterSeed(new Buffer(seed, 'hex'));
 var hdKey = masterKey.derive('m/3000\'/0\'');
+var child = hdKey.deriveChild(10);
+var childPriv = child.privateKey.toString('hex');
 var pub = 'xpub6BHSRpUigNcUpUAWvcJJrCVnPUvbi8ZUzeRfsipe9ow21YE7eoLhzJ4h' +
     'vkQmEoGMeX3jpwaHp91ycGo1Z4WStsEVBmw1qq6Q3ouPm6GqA4L';
 var priv = '979008b562424a0bcd29d82ca6c5c27c7b8e420e17a936752454b9650fac3cd5';
@@ -26,7 +28,9 @@ describe('Renter', function() {
 
     it('will construct new instance (with/without new)', function() {
       var options = {
-        networkPrivateKey: key
+        networkPrivateExtendedKey: hdKey.privateExtendedKey,
+        networkIndex: 10,
+        migrationPrivateKey: key
       };
       var renter = complex.createRenter(options);
       var renter2 = new complex.createRenter(options);
@@ -43,7 +47,9 @@ describe('Renter', function() {
           amqpOpts: {},
           mongoUrl: 'mongodb://localhost:27017/storj-test',
           mongoOpts: {},
-          networkPrivateKey: '/tmp/storj-complex/private.key',
+          networkPrivateExtendedKey: '/tmp/storj-complex/hd-private.key',
+          networkIndex: 10,
+          migrationPrivateKey: '/tmp/storj-complex/private.key',
           networkOpts: {
             rpcPort: 4000,
             rpcAddress: 'localhost',
@@ -62,10 +68,12 @@ describe('Renter', function() {
       };
       sandbox.stub(fs, 'readFileSync');
       fs.readFileSync.onFirstCall().returns(JSON.stringify(config));
-      fs.readFileSync.onSecondCall().returns(key);
+      fs.readFileSync.onSecondCall().returns(hdKey.privateExtendedKey);
+      fs.readFileSync.onThirdCall().returns(priv);
       var conf = complex.createConfig('/tmp/someconfig.json');
       var renter = complex.createRenter(conf);
-      expect(renter.keyPair.getPrivateKey()).to.equal(key);
+      expect(renter.migrationKeyPair.getPrivateKey()).to.equal(priv);
+      expect(renter.keyPair.getPrivateKey()).to.equal(childPriv);
     });
 
     it('will construct with hd private key', function() {
@@ -78,15 +86,6 @@ describe('Renter', function() {
       expect(renter.hdKey);
       expect(renter.keyPair.getPrivateKey()).to.equal(priv);
       expect(renter.hdKey.publicExtendedKey).to.equal(pub);
-    });
-
-    it('will construct with private key', function() {
-      var options = {
-        networkPrivateKey: key
-      };
-      var renter = complex.createRenter(options);
-      expect(renter).to.be.instanceOf(complex.createRenter);
-      expect(renter.keyPair.getPrivateKey()).to.equal(key);
     });
 
   });
@@ -114,23 +113,6 @@ describe('Renter', function() {
       expect(contract.sign.callCount).to.equal(1);
       expect(contract.sign.args[0][0]).to.equal('renter');
       expect(contract.sign.args[0][1]).to.equal(priv);
-    });
-
-    it('will not set hd props on the contract', function() {
-      var options = {
-        networkPrivateKey: key
-      };
-      var renter = complex.createRenter(options);
-      var contract = {
-        set: sinon.stub(),
-        sign: sinon.stub()
-      };
-      renter._signStorageContract(contract);
-      expect(contract.set.callCount).to.equal(1);
-      expect(contract.set.args[0][0]).to.equal('renter_id');
-      expect(contract.sign.callCount).to.equal(1);
-      expect(contract.sign.args[0][0]).to.equal('renter');
-      expect(contract.sign.args[0][1]).to.equal(key);
     });
 
   });

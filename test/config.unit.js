@@ -19,7 +19,7 @@ describe('Renter Config', function() {
     sandbox.restore();
   });
 
-  it('will create config with private key', function() {
+  it('will create config with migration and extended key', function() {
     var config = {
       type: 'Renter',
       opts: {
@@ -28,7 +28,8 @@ describe('Renter Config', function() {
         amqpOpts: {},
         mongoUrl: 'mongodb://localhost:27017/storj-test',
         mongoOpts: {},
-        networkPrivateKey: '/tmp/storj-complex/private.key',
+        networkPrivateExtendedKey: '/tmp/storj-complex/hd-private.key',
+        migrationPrivateKey: '/tmp/storj-complex/private.key',
         networkOpts: {
           rpcPort: 4000,
           rpcAddress: 'localhost',
@@ -47,9 +48,11 @@ describe('Renter Config', function() {
     };
     var readFileSync = sandbox.stub(fs, 'readFileSync');
     readFileSync.onFirstCall().returns(JSON.stringify(config));
-    readFileSync.onSecondCall().returns(new Buffer('key'));
+    readFileSync.onSecondCall().returns(xpriv);
+    readFileSync.onThirdCall().returns(new Buffer('key'));
     var conf = complex.createConfig('/tmp/somepath.json');
-    expect(conf._.networkPrivateKey).to.equal('key');
+    expect(conf._.migrationPrivateKey).to.equal('key');
+    expect(conf._.networkPrivateExtendedKey).to.equal(xpriv);
   });
 
   it('will create config with extended private key', function() {
