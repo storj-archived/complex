@@ -1,6 +1,7 @@
 'use strict';
 
 var fs = require('fs');
+var ReadableStream = require('stream').Readable;
 var sinon = require('sinon');
 var expect = require('chai').expect;
 var HDKey = require('hdkey');
@@ -90,6 +91,41 @@ describe('Renter', function() {
 
   });
 
+  describe('#_initPrivateKey', function() {
+
+  });
+
+  describe('#start', function() {
+
+  });
+
+  describe('_loadKnownSeeds', function() {
+
+  });
+
+  describe('_initMessageBus', function() {
+
+  });
+
+  describe('_onContactAdded', function() {
+
+  });
+
+  describe('#_handleNetworkEvents', function() {
+
+  });
+
+  describe('#_handleWork', function() {
+
+  });
+
+  describe('#_desializeArguments', function() {
+  });
+
+  describe('#_serializeArguments', function() {
+
+  });
+
   describe('#_signStorageContract', function() {
 
     it('will set the hd props on the contract', function() {
@@ -115,6 +151,172 @@ describe('Renter', function() {
       expect(contract.sign.args[0][1]).to.equal(priv);
     });
 
+  });
+
+  describe('#_renewContract', function() {
+
+  });
+
+  describe('#_getStorageOffers', function() {
+    var options = {
+      networkPrivateExtendedKey: hdKey.privateExtendedKey,
+      networkIndex: 10
+    };
+    it('will handle error from stream', function(done) {
+      var renter = complex.createRenter(options);
+      renter._logger = {
+        error: sinon.stub()
+      };
+      var contract = {
+        get: sinon.stub()
+      };
+      var blacklist = [];
+      var offerStream = new ReadableStream();
+      renter.network = {
+        getOfferStream: sinon.stub().returns(offerStream)
+      };
+      renter._signStorageContract = sinon.stub();
+      renter._getStorageOffers(contract, blacklist);
+      offerStream.emit('error', new Error('test'));
+      expect(renter._logger.error.callCount).to.equal(1);
+      done();
+    });
+
+    it('will handle offer stream end', function(done) {
+      var renter = complex.createRenter(options);
+      renter._logger = {
+        info: sinon.stub()
+      };
+      var contract = {
+        get: sinon.stub()
+      };
+      var blacklist = [];
+      var offerStream = new ReadableStream();
+      renter.network = {
+        getOfferStream: sinon.stub().returns(offerStream)
+      };
+      renter._signStorageContract = sinon.stub();
+      renter._getStorageOffers(contract, blacklist);
+      offerStream.emit('end');
+      expect(renter._logger.info.callCount).to.equal(1);
+      done();
+    });
+
+    it('will handle first data event from stream', function(done) {
+      var renter = complex.createRenter(options);
+      renter._logger = {
+        info: sinon.stub()
+      };
+      var contact = {};
+      var contract = {
+        get: sinon.stub()
+      };
+      var blacklist = [];
+      var offerStream = new ReadableStream();
+      var item = {
+        addContract: sinon.stub()
+      };
+      renter.network = {
+        getOfferStream: sinon.stub().returns(offerStream),
+        storageManager: {
+          load: sinon.stub().callsArgWith(1, null, item),
+          save: sinon.stub().callsArg(1)
+        }
+      };
+      renter._signStorageContract = sinon.stub();
+      renter._getStorageOffers(contract, blacklist, function(err,
+                                                             contact2,
+                                                             contract2) {
+        expect(contact2).to.equal(contact);
+        expect(contract2).to.equal(contract);
+        done();
+      });
+      var offer = {
+        contact: contact,
+        contract: contract
+      };
+      offerStream.emit('data', offer);
+    });
+
+    it('should save additional data as mirror offers', function(done) {
+      /* jshint maxstatements: 50 */
+      var renter = complex.createRenter(options);
+      renter._logger = {
+        info: sinon.stub()
+      };
+      var contact = {};
+      var contract = {
+        get: sinon.stub(),
+        toObject: sinon.stub().returns('contract object')
+      };
+      var blacklist = [];
+      var offerStream = new ReadableStream();
+      var item = {
+        addContract: sinon.stub()
+      };
+      renter.storage = {
+        models: {
+          Mirror: {
+            create: sinon.stub().callsArg(2)
+          }
+        }
+      };
+      renter.network = {
+        getOfferStream: sinon.stub().returns(offerStream),
+        storageManager: {
+          load: sinon.stub().callsArgWith(1, null, item),
+          save: sinon.stub().callsArg(1)
+        }
+      };
+      renter._signStorageContract = sinon.stub();
+      renter._getStorageOffers(
+        contract,
+        blacklist,
+        function(err, contact2, contract2) {
+          expect(contact2).to.equal(contact);
+          expect(contract2).to.equal(contract);
+        }
+      );
+      expect(renter._signStorageContract.callCount).to.equal(1);
+      expect(renter._signStorageContract.args[0][0]).to.equal(contract);
+      expect(renter.network.getOfferStream.callCount).to.equal(1);
+      expect(renter.network.getOfferStream.args[0][0]).to.equal(contract);
+      expect(renter.network.getOfferStream.args[0][1]).to.deep.equal({
+        maxOffers: 12,
+        farmerBlacklist: blacklist
+      });
+      var offer0 = {
+        contact: contact,
+        contract: contract
+      };
+      var offer1 = {
+        contact: contact,
+        contract: contract
+      };
+      var offer2 = {
+        contact: contact,
+        contract: contract
+      };
+      offerStream.resume = sinon.stub();
+      offerStream.pause = sinon.stub();
+      offerStream.emit('data', offer0);
+      offerStream.emit('data', offer1);
+      offerStream.emit('data', offer2);
+      expect(renter.storage.models.Mirror.create.callCount).to.equal(2);
+      expect(offerStream.pause.callCount).to.equal(3);
+      expect(offerStream.resume.callCount).to.equal(3);
+      expect(contract.toObject.callCount).to.equal(2);
+      var create = renter.storage.models.Mirror.create;
+      expect(create.callCount).to.equal(2);
+      expect(create.args[0][0]).to.equal('contract object');
+      expect(create.args[1][0]).to.equal('contract object');
+      expect(create.args[0][1]).to.equal(contact);
+      expect(create.args[1][1]).to.equal(contact);
+      expect(item.addContract.callCount).to.equal(1);
+      expect(item.addContract.args[0][0]).to.equal(contact);
+      expect(item.addContract.args[0][1]).to.equal(contract);
+      done();
+    });
   });
 
 });
