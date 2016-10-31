@@ -1,6 +1,9 @@
 'use strict';
+/* jshint maxstatements: 100 */
 
 var fs = require('fs');
+var storj = require('storj-lib');
+var kad = storj.deps.kad;
 var ReadableStream = require('stream').Readable;
 var sinon = require('sinon');
 var expect = require('chai').expect;
@@ -10,6 +13,8 @@ var complex = require('..');
 var seed = 'a0c42a9c3ac6abf2ba6a9946ae83af18f51bf1c9fa7dacc4c92513cc4dd015834' +
     '341c775dcd4c0fac73547c5662d81a9e9361a0aac604a73a321bd9103bce8af';
 var key = '08d1015861dd2c09ab36e97a8ecdbae26f20baabede6d618f6fb62904522c7fa';
+var migrationKeyPair = storj.KeyPair(key);
+var migID = migrationKeyPair.getNodeID();
 var masterKey = HDKey.fromMasterSeed(new Buffer(seed, 'hex'));
 var hdKey = masterKey.derive('m/3000\'/0\'');
 var child = hdKey.deriveChild(10);
@@ -153,8 +158,296 @@ describe('Renter', function() {
 
   });
 
-  describe('#_renewContract', function() {
+  describe('#_getRetrievalPointer', function() {
+    it('will not renew without migration key', function(done) {
+      var options = {
+        networkPrivateExtendedKey: hdKey.privateExtendedKey,
+        networkIndex: 10
+      };
+      var renter = complex.createRenter(options);
+      renter._renewContract = sinon.stub();
+      renter.network = {
+        getRetrievalPointer: sinon.stub().callsArg(2)
+      };
+      var contract = {};
+      var contact = {};
+      renter._getRetrievalPointer(contact, contract, function() {
+        expect(renter.network.getRetrievalPointer.callCount)
+          .to.equal(1);
+        expect(renter.network.getRetrievalPointer.args[0][0])
+          .to.equal(contact);
+        expect(renter.network.getRetrievalPointer.args[0][1])
+          .to.equal(contract);
+        expect(renter._renewContract.callCount).to.equal(0);
+        done();
+      });
+    });
 
+    it('will not renew if contract already has hd key', function(done) {
+      var options = {
+        networkPrivateExtendedKey: hdKey.privateExtendedKey,
+        networkIndex: 10,
+        migrationPrivateKey: key
+      };
+      var renter = complex.createRenter(options);
+      renter._renewContract = sinon.stub();
+      renter.network = {
+        getRetrievalPointer: sinon.stub().callsArg(2)
+      };
+      var contract = new storj.Contract();
+      contract.set('renter_hd_key', hdKey.publicExtendedKey);
+      var contact = {};
+      renter._getRetrievalPointer(contact, contract, function() {
+        expect(renter.network.getRetrievalPointer.callCount)
+          .to.equal(1);
+        expect(renter.network.getRetrievalPointer.args[0][0])
+          .to.equal(contact);
+        expect(renter.network.getRetrievalPointer.args[0][1])
+          .to.equal(contract);
+        expect(renter._renewContract.callCount).to.equal(0);
+        done();
+      });
+    });
+
+    it('will renew and get pointer', function(done) {
+      var options = {
+        networkPrivateExtendedKey: hdKey.privateExtendedKey,
+        networkIndex: 10,
+        migrationPrivateKey: key
+      };
+      var renter = complex.createRenter(options);
+      renter._renewContract = sinon.stub().callsArg(2);
+      renter.network = {
+        getRetrievalPointer: sinon.stub().callsArg(2)
+      };
+      var contract = new storj.Contract();
+      var contact = {};
+      renter._getRetrievalPointer(contact, contract, function() {
+        expect(renter.network.getRetrievalPointer.callCount)
+          .to.equal(1);
+        expect(renter.network.getRetrievalPointer.args[0][0])
+          .to.equal(contact);
+        expect(renter.network.getRetrievalPointer.args[0][1])
+          .to.equal(contract);
+        expect(renter._renewContract.callCount).to.equal(1);
+        done();
+      });
+    });
+  });
+
+  describe('#_renewContract', function() {
+    var options = {
+      networkPrivateExtendedKey: hdKey.privateExtendedKey,
+      networkIndex: 10,
+      migrationPrivateKey: key
+    };
+    it('will handle error from transport', function(done) {
+      var renter = complex.createRenter(options);
+      var contact = {};
+      var contract = {
+        toObject: sinon.stub()
+      };
+      renter._signStorageContract = sinon.stub();
+      renter._renewContractMessage = sinon.stub();
+      renter.network = {
+        transport: {
+          send: sinon.stub().callsArgWith(2, new Error('test'))
+        }
+      };
+      renter._renewContract(contact, contract, function(err) {
+        expect(err).to.be.instanceOf(Error);
+        expect(err.message).to.equal('test');
+        done();
+      });
+    });
+    it('will handle error from farmer', function(done) {
+      var renter = complex.createRenter(options);
+      var contact = {};
+      var contract = {
+        toObject: sinon.stub()
+      };
+      renter._signStorageContract = sinon.stub();
+      renter._renewContractMessage = sinon.stub();
+      renter.network = {
+        transport: {
+          send: sinon.stub().callsArgWith(2, null, {
+            error: {
+              message: 'test'
+            }
+          })
+        }
+      };
+      renter._renewContract(contact, contract, function(err) {
+        expect(err).to.be.instanceOf(Error);
+        expect(err.message).to.equal('test');
+        done();
+      });
+    });
+    it('will handle invalid contract from farmer', function(done) {
+      var renter = complex.createRenter(options);
+      var contact = {};
+      var contract = {
+        toObject: sinon.stub()
+      };
+      renter._signStorageContract = sinon.stub();
+      renter._renewContractMessage = sinon.stub();
+      renter._validRenewedContract = sinon.stub().returns(false);
+      renter.network = {
+        transport: {
+          send: sinon.stub().callsArgWith(2, null, {
+            result: {
+              contract: contract
+            }
+          })
+        }
+      };
+      renter._renewContract(contact, contract, function(err) {
+        expect(err).to.be.instanceOf(Error);
+        expect(err.message).to.equal('Invalid farmer contract');
+        done();
+      });
+    });
+    it('will save valid renewed contract', function(done) {
+      var renter = complex.createRenter(options);
+      var contact = {};
+      var contract = {
+        toObject: sinon.stub()
+      };
+      renter._signStorageContract = sinon.stub();
+      renter._renewContractMessage = sinon.stub();
+      renter._validRenewedContract = sinon.stub().returns(true);
+      renter._saveRenewedContract = sinon.stub().callsArg(1);
+      renter.network = {
+        transport: {
+          send: sinon.stub().callsArgWith(2, null, {
+            result: {
+              contract: contract
+            }
+          })
+        }
+      };
+      renter._renewContract(contact, contract, function(err) {
+        expect(err).to.equal(undefined);
+        done();
+      });
+    });
+  });
+
+  describe('#_renewContractMessage', function() {
+    var options = {
+      networkPrivateExtendedKey: hdKey.privateExtendedKey,
+      networkIndex: 10,
+      migrationPrivateKey: key
+    };
+    it('will create renew message', function() {
+      var renter = complex.createRenter(options);
+      var contact = new storj.Contact({
+        address: '127.0.0.1',
+        port: 1000
+      });
+      renter.network = {
+        contact: contact
+      };
+      var contract = new storj.Contract();
+      contract.set('renter_id', nodeID);
+      var updatedContract = new storj.Contract();
+      var msg = renter._renewContractMessage(contract, updatedContract);
+      expect(msg).to.be.instanceOf(kad.Message);
+      expect(msg.method).to.equal('RENEW');
+      expect(msg.params.renter_id).to.equal(nodeID);
+      expect(msg.params.renter_signature).to.be.a('string');
+      expect(msg.params.contract).to.deep.equal(updatedContract.toObject());
+      expect(msg.params.contact).to.deep.equal(contact);
+      var signedContract = new storj.Contract(msg.params.contract);
+      var signature = msg.params.renter_signature;
+      var valid = signedContract.verifyExternal(signature, migID);
+      expect(valid).to.equal(true);
+    });
+  });
+
+  describe('#_validRenewedContract', function() {
+    var options = {
+      networkPrivateExtendedKey: hdKey.privateExtendedKey,
+      networkIndex: 10,
+      migrationPrivateKey: key
+    };
+    it('return false if contracts are different except for sig', function() {
+      var renter = complex.createRenter(options);
+      var before = new storj.Contract();
+      var id = '028fa8eeb6f3c3d9c0746da43164834e7df08bc6';
+      before.set('farmer_id', id);
+      var after = new storj.Contract(before.toObject());
+      var id2 = '4f31eb367dbf83f39c92d09e5a51a8fa19efe1d6';
+      after.set('farmed_id', id2);
+      expect(renter._validRenewedContract(before, after)).to.equal(false);
+    });
+    it('return false with bad signature', function() {
+      var renter = complex.createRenter(options);
+      var before = new storj.Contract();
+      var key = new storj.KeyPair();
+      var key2 = new storj.KeyPair();
+      before.set('farmer_id', key.getNodeID());
+      var after = new storj.Contract(before.toObject());
+      after.sign('farmer', key2.getPrivateKey());
+      expect(renter._validRenewedContract(before, after)).to.equal(false);
+    });
+    it('return true with good signature', function() {
+      var renter = complex.createRenter(options);
+      var before = new storj.Contract();
+      var key = new storj.KeyPair();
+      before.set('farmer_id', key.getNodeID());
+      var after = new storj.Contract(before.toObject());
+      after.sign('farmer', key.getPrivateKey());
+      expect(renter._validRenewedContract(before, after)).to.equal(true);
+    });
+  });
+
+  describe('#_saveRenewedContract', function() {
+    var options = {
+      networkPrivateExtendedKey: hdKey.privateExtendedKey,
+      networkIndex: 10,
+      migrationPrivateKey: key
+    };
+    it('will handle error from storage manager', function() {
+      var renter = complex.createRenter(options);
+      var contract = new storj.Contract();
+      renter.network = {
+        storageManager: {
+          load: sinon.stub().callsArgWith(1, new Error('test'))
+        }
+      };
+      renter._saveRenewedContract(contract, function(err) {
+        expect(err).to.be.instanceOf(Error);
+        expect(err.message).to.equal('test');
+      });
+    });
+    it('will save updated storage item', function() {
+      var renter = complex.createRenter(options);
+      var contract = new storj.Contract();
+      contract.set('farmer_id', '0d172aae0b9468103401c88d2491415a659a0f9c');
+      var item = {
+        removeContract: sinon.stub(),
+        addContract: sinon.stub()
+      };
+      renter.network = {
+        storageManager: {
+          load: sinon.stub().callsArgWith(1, null, item),
+          save: sinon.stub().callsArg(1)
+        }
+      };
+      renter._saveRenewedContract(contract, function(err) {
+        expect(err).to.equal(undefined);
+        expect(item.removeContract.callCount).to.equal(1);
+        expect(item.removeContract.args[0][0]).to.deep.equal({
+          nodeID: '0d172aae0b9468103401c88d2491415a659a0f9c'
+        });
+        expect(item.addContract.callCount).to.equal(1);
+        expect(item.addContract.args[0][0]).to.deep.equal({
+          nodeID: '0d172aae0b9468103401c88d2491415a659a0f9c'
+        });
+        expect(item.addContract.args[0][1]).to.equal(contract);
+      });
+    });
   });
 
   describe('#_getStorageOffers', function() {
