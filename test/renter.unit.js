@@ -97,30 +97,252 @@ describe('Renter', function() {
   });
 
   describe('#_initPrivateKey', function() {
-
   });
 
   describe('#start', function() {
-
   });
 
   describe('_loadKnownSeeds', function() {
-
+    it('will load latest contacts by url', function() {
+    });
   });
 
   describe('_initMessageBus', function() {
-
+    it('will setup rabbit sockets and connect', function() {
+    });
+    it('will handle data from worker socket', function() {
+    });
+    it('will join the network', function() {
+    });
   });
 
   describe('_onContactAdded', function() {
-
+    it('will record contact', function() {
+    });
   });
 
   describe('#_handleNetworkEvents', function() {
+    it('will add contact with router add', function() {
+    });
+
+    it('will add contact on router shift', function() {
+    });
+
+    it('will emit ready', function() {
+    });
 
   });
 
   describe('#_handleWork', function() {
+    var sandbox = sinon.sandbox.create();
+    afterEach(function() {
+      sandbox.restore();
+    });
+    var options = {
+      networkPrivateExtendedKey: hdKey.privateExtendedKey,
+      networkIndex: 10
+    };
+
+    it('will give method not found message', function() {
+      var renter = complex.createRenter(options);
+      renter.worker = {
+        ack: sinon.stub()
+      };
+      var write = sinon.stub();
+      renter.notifier = {
+        write: write
+      };
+      var buffer = new Buffer(JSON.stringify({
+        method: 'someUnknownMethod',
+        id: 'someid'
+      }));
+      renter._handleWork(buffer);
+      expect(write.callCount).to.equal(1);
+      expect(JSON.parse(write.args[0][0].toString())).to.deep.equal({
+        id: 'someid',
+        error: {
+          code: -32601,
+          message: 'Method not found'
+        }
+      });
+      expect(renter.worker.ack.callCount).to.equal(1);
+    });
+
+    it('will serialize/deserialize args with redirected method', function() {
+      var renter = complex.createRenter(options);
+      var pointer = new storj.DataChannelPointer(
+        storj.Contact({
+          address: '127.0.0.1',
+          port: 3000
+        }),
+        'fad8d3a30b5d40dae9e61f7f84bf9017e9f4bb2f',
+        '02d8b561ac9297cf2d67fe5d8fe673305e84e40a',
+        'PULL'
+      );
+      renter._getRetrievalPointer = sinon.stub().callsArgWith(2, null, pointer);
+      renter.worker = {
+        ack: sinon.stub()
+      };
+      var write = sinon.stub();
+      renter.notifier = {
+        write: write
+      };
+      var buffer = new Buffer(JSON.stringify({
+        method: 'getRetrievalPointer',
+        id: 'someid',
+        params: [
+          {
+            address: '127.0.0.1',
+            port: 3000
+          },
+          {
+            data_hash: '2418003db2a20ea6b99d8efaa61aecb5acbb96a9'
+          }
+        ]
+      }));
+      renter._handleWork(buffer);
+      expect(write.callCount).to.equal(1);
+      var parsed = JSON.parse(write.args[0][0].toString());
+      // remove last seen property that changes
+      expect(parsed.result[1].farmer.lastSeen).to.be.a('number');
+      delete parsed.result[1].farmer.lastSeen;
+      expect(parsed).to.deep.equal({
+        id: 'someid',
+        result: [
+          null,
+          {
+            farmer: {
+              address: '127.0.0.1',
+              nodeID: '955af05f3130ac5c70952a34a9aa710c9fbf812b',
+              port: 3000,
+              protocol: '0.10.0',
+              userAgent: '5.0.0'
+            },
+            hash: 'fad8d3a30b5d40dae9e61f7f84bf9017e9f4bb2f',
+            operation: 'PULL',
+            token: '02d8b561ac9297cf2d67fe5d8fe673305e84e40a'
+          }
+        ]
+      });
+      expect(renter.worker.ack.callCount).to.equal(1);
+    });
+
+    it('will serialize/deserialize args for non-redirect', function() {
+      var proof = [
+        [
+          [
+            [
+              '7947625e0e424ebe07d3403dce4088f673215ea0',
+              [
+                '8813e458e1a20c434eb1d5336d07778d01c9553a'
+              ]
+            ],
+            'fb9c71c9c60616e4fc22a537a9ebab1eeca441dc'
+          ],
+          '4f6cab6a8a7623bb31d27243a0548687f4fcf159'
+        ],
+        '07a925e3bb75cfc5e00e15207e4a90ee6c897513'
+      ];
+      var renter = complex.createRenter(options);
+      renter.worker = {
+        ack: sinon.stub()
+      };
+      renter.network = {
+        getStorageProof: sinon.stub().callsArgWith(2, null, proof)
+      };
+      var write = sinon.stub();
+      renter.notifier = {
+        write: write
+      };
+      var farmer = {
+        address: '127.0.0.1',
+        port: 3000
+      };
+      var item = {};
+      var buffer = new Buffer(JSON.stringify({
+        method: 'getStorageProof',
+        id: 'someid',
+        params: [ farmer, item ]
+      }));
+      renter._handleWork(buffer);
+      expect(write.callCount).to.equal(1);
+      var parsed = JSON.parse(write.args[0][0].toString());
+      expect(parsed).to.deep.equal({
+        id: 'someid',
+        result: [ null, proof ]
+      });
+      expect(renter.worker.ack.callCount).to.equal(1);
+    });
+
+    it('will give error from calling method', function() {
+      var renter = complex.createRenter(options);
+      renter.worker = {
+        ack: sinon.stub()
+      };
+      renter.network = {
+        getStorageProof: sinon.stub().callsArgWith(2, new Error('test'))
+      };
+      var write = sinon.stub();
+      renter.notifier = {
+        write: write
+      };
+      var farmer = {
+        address: '127.0.0.1',
+        port: 3000
+      };
+      var item = {};
+      var buffer = new Buffer(JSON.stringify({
+        method: 'getStorageProof',
+        id: 'someid',
+        params: [ farmer, item ]
+      }));
+      renter._handleWork(buffer);
+      expect(write.callCount).to.equal(1);
+      var parsed = JSON.parse(write.args[0][0].toString());
+      expect(parsed).to.deep.equal({
+        id: 'someid',
+        error: {
+          code: -32603,
+          message: 'test'
+        }
+      });
+      expect(renter.worker.ack.callCount).to.equal(1);
+    });
+
+    it('will give error if calling method', function() {
+      var renter = complex.createRenter(options);
+      renter.worker = {
+        ack: sinon.stub()
+      };
+      renter.network = {
+        getStorageProof: sinon.stub().throws(new Error('test'))
+      };
+      var write = sinon.stub();
+      renter.notifier = {
+        write: write
+      };
+      var farmer = {
+        address: '127.0.0.1',
+        port: 3000
+      };
+      var item = {};
+      var buffer = new Buffer(JSON.stringify({
+        method: 'getStorageProof',
+        id: 'someid',
+        params: [ farmer, item ]
+      }));
+      renter._handleWork(buffer);
+      expect(write.callCount).to.equal(1);
+      var parsed = JSON.parse(write.args[0][0].toString());
+      expect(parsed).to.deep.equal({
+        id: 'someid',
+        error: {
+          code: -32603,
+          message: 'test'
+        }
+      });
+      expect(renter.worker.ack.callCount).to.equal(1);
+    });
 
   });
 

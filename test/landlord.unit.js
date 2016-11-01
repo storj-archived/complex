@@ -389,10 +389,10 @@ describe('Landlord', function() {
       var buffer = new Buffer(JSON.stringify({
         hello: 'world',
         id: 'someid',
-        result: {
-          0: 'value0',
-          1: 'value1'
-        }
+        result: [
+          'value0',
+          'value1'
+        ]
       }));
       landlord._logger = {
         info: sandbox.stub(),
@@ -417,16 +417,6 @@ describe('Landlord', function() {
         ]
       });
     });
-  });
-
-  describe('#_objectToArray', function() {
-
-    it('will convert an object into an array', function() {
-      var landlord = complex.createLandlord({});
-      var result = landlord._objectToArray({0: 'z', 1: 'y'});
-      expect(result).to.deep.equal(['z', 'y']);
-    });
-
   });
 
 });
