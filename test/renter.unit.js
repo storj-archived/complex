@@ -124,10 +124,236 @@ describe('Renter', function() {
 
   });
 
-  describe('#_desializeArguments', function() {
+  describe('#_deserializeArguments', function() {
+    var options = {
+      networkPrivateExtendedKey: hdKey.privateExtendedKey,
+      networkIndex: 10
+    };
+    var renter = complex.createRenter(options);
+
+    it('getConsignmentPointer', function() {
+      var method = 'getConsignmentPointer';
+      var tree = [
+        '45bd496c4f4c1235270c6b2e1f60b051a3a609bf',
+        'fa767b00186859ade0f6033c048515a606958f37',
+        'e5a7999ce6918f5a6ce4210ce759a4f488e6ec19',
+        '3854f7744f819a6ad5a5acfbe543463f11e5b978',
+        'cc884402e2c94e832677c76c01381d326417d6ff',
+        'e663e3fea469de55a6f0690774d9123adb81fb16',
+        '938b03c7211b9bb835e1d41095104b61ce5b47e9',
+        'b07bdcba08b5f7a1e839af4764c3041a0ef72129',
+        'b793fd829212c6c52625ab5ee1f605aca28560b7',
+        '591ffe7603132d3be32abba6a746d12146dd29e4',
+        '402a766c6ab4fe3057495dc8306c63b5a32f56d6',
+        'a422d62c676dadbda2f6616f3cb7225544f3c6ba',
+        'b472a266d0bd89c13706a4132ccfb16f7c3b9fcb',
+        'b472a266d0bd89c13706a4132ccfb16f7c3b9fcb',
+        'b472a266d0bd89c13706a4132ccfb16f7c3b9fcb',
+        'b472a266d0bd89c13706a4132ccfb16f7c3b9fcb'
+      ];
+      var challenges = [
+        '278f5e8ea2f624639f4eb25ff4524bb3ba67d01a4eb24ad27a30d242470c46ab',
+        'c4b0546b7acf886083716bf792eee10bf7e4c4a55c6aee5b6575ea7e4d762ed4',
+        'dcd658b08a5f723ef2112bbe5df4b796c868bd3c9aeee977db56c66179ec7c2e',
+        '02bcfc4d067a3b7117fd2a09af14d963163d22dd25f81add2adc0e6075c41e3e',
+        '9b35f8237d1775aaceeee7c93671209fb008481d0fc503cc8ff58778024d0aaf',
+        '8789d3ef05104a56e143cb4ae51876ca4dbb9f7e8a03b2732013a87ed20a617e',
+        'ce3d32ec8fabf7d0b1d88391263f7b6bf866d892ee088a0733593d8406d7f762',
+        '966b5c1335737eae1c95b8a0ce5f119bcf7474ff25e22c4a40d0ba061da3e8cf',
+        'c9077b70604bd173c7afa9503e7966a3d756d25fef217ff50d95c428a7e65b84',
+        '9fbf381169f3d63b859a39005390a55d8f44077d913a62fa2dbe8826c9a088e8',
+        '565a057e85a8d69d2ff8b6a1dd9be0747810a614d2f0baaecdca4bb7331bbb98',
+        '9fe899bf30071a68e05ed6139623fce8ee1c4ac22d43bdf2d89c95577e7e4a4d'
+      ];
+      var args = [
+        {
+          address: '127.0.0.1',
+          port: 3000
+        },
+        {
+          data_hash: '2418003db2a20ea6b99d8efaa61aecb5acbb96a9'
+        },
+        {
+          challenges: challenges,
+          tree: tree
+        }
+      ];
+      var result = renter._deserializeArguments(method, args);
+      expect(result[0]).to.be.instanceOf(storj.Contact);
+      expect(result[1]).to.be.instanceOf(storj.Contract);
+      expect(result[2]).to.be.instanceOf(storj.AuditStream);
+    });
+
+    it('getRetrievalPointer', function() {
+      var method = 'getRetrievalPointer';
+      var args = [
+        {
+          address: '127.0.0.1',
+          port: 3000
+        },
+        {
+          data_hash: '2418003db2a20ea6b99d8efaa61aecb5acbb96a9'
+        }
+      ];
+      var result = renter._deserializeArguments(method, args);
+      expect(result[0]).to.be.instanceOf(storj.Contact);
+      expect(result[1]).to.be.instanceOf(storj.Contract);
+    });
+
+    it('getMirrorNodes', function() {
+      var method = 'getMirrorNodes';
+      var args = [
+        [
+          {
+            farmer: {
+              address: '127.0.0.1',
+              port: 3000
+            },
+            hash: '12981a76bb34888d66eda35800b6487ce39f3a8f',
+            token: 'ebef6003e8cc51506506135358849d8cdd57083c',
+            operation: 'PULL'
+          },
+          {
+            farmer: {
+              address: '127.0.0.1',
+              port: 3000
+            },
+            hash: 'f960e92855e446ad0dc1140672c102d80515592b',
+            token: '3f58ea32411452218ae230a7365d8be588e267c6',
+            operation: 'PUSH'
+          }
+        ],
+        [
+          {
+            address: '127.0.0.1',
+            port: 3000
+          },
+          {
+            address: '127.0.0.1',
+            port: 3000
+          }
+        ]
+      ];
+      var result = renter._deserializeArguments(method, args);
+      result[0].forEach(function(data) {
+        expect(data).to.be.instanceOf(storj.DataChannelPointer);
+      });
+      result[1].forEach(function(data) {
+        expect(data).to.be.instanceOf(storj.Contact);
+      });
+    });
+
+    it('getStorageProof', function() {
+      var method = 'getStorageProof';
+      var args = [
+        {
+          address: '127.0.0.1',
+          port: 3000
+        },
+        {
+          hash: null,
+          shard: null,
+          contracts: {
+            b0e469be9f453521e8c55c60a48a9ebd2d6d4cb0: {
+              audit_count: 12,
+              data_hash: 'b472a266d0bd89c13706a4132ccfb16f7c3b9fcb',
+              data_size: 1234,
+              farmer_id: null,
+              farmer_signature: null,
+              payment_destination: null,
+              payment_download_price: 0,
+              payment_storage_price: 0,
+              renter_hd_index: false,
+              renter_hd_key: false,
+              renter_id: 'b0e469be9f453521e8c55c60a48a9ebd2d6d4cb0',
+              renter_signature: null,
+              store_begin: 1478022147655,
+              store_end: 1478022157655,
+              version: 0
+            }
+          },
+          challenges: {},
+          trees: {},
+          meta: {},
+          modified: 1478022147655
+        }
+      ];
+      var result = renter._deserializeArguments(method, args);
+      expect(result[0]).to.be.instanceOf(storj.Contact);
+      expect(result[1]).to.be.instanceOf(storj.StorageItem);
+    });
+
+    it('getStorageOffer (with blacklist)', function() {
+      var method = 'getStorageOffer';
+      var args = [
+        {
+          data_hash: '2418003db2a20ea6b99d8efaa61aecb5acbb96a9'
+        },
+        [
+          '96cd708741b10d346ddef9b973b44613887ff995',
+          'caca1969435d738a7a679a455d51a0f1663db58a'
+        ]
+      ];
+      var result = renter._deserializeArguments(method, args);
+      expect(result[0]).to.be.instanceOf(storj.Contract);
+      expect(Array.isArray(result[1])).to.equal(true);
+      expect(result[1]).to.equal(args[1]);
+    });
+
+    it('getStorageOffer (without blacklist)', function() {
+      var method = 'getStorageOffer';
+      var args = [
+        {
+          data_hash: '2418003db2a20ea6b99d8efaa61aecb5acbb96a9'
+        }
+      ];
+      var result = renter._deserializeArguments(method, args);
+      expect(result[0]).to.be.instanceOf(storj.Contract);
+      expect(Array.isArray(result[1])).to.equal(true);
+      expect(result[1]).to.deep.equal([]);
+    });
+
   });
 
   describe('#_serializeArguments', function() {
+    var options = {
+      networkPrivateExtendedKey: hdKey.privateExtendedKey,
+      networkIndex: 10
+    };
+    var renter = complex.createRenter(options);
+
+    var unchanged = [
+      'getConsignmentPointer',
+      'getRetrievalPointer',
+      'getMirrorNodes',
+      'getStorageProof',
+      'etcetera'
+    ];
+
+    unchanged.forEach(function(method) {
+      it('unchanged: ' + method, function() {
+        var args = [];
+        var result = renter._serializeArguments(method, args);
+        expect(result).to.equal(args);
+      });
+    });
+
+    it('getStorageOffer', function() {
+      var method = 'getStorageOffer';
+      var contact = new storj.Contact({
+        address: '127.0.0.1',
+        port: 3000
+      });
+      var contract = new storj.Contract();
+      var args = [
+        null,
+        contact,
+        contract
+      ];
+      var result = renter._serializeArguments(method, args);
+      expect(result).to.equal(args);
+      expect(result[2]).to.not.be.instanceOf(storj.Contract);
+    });
 
   });
 
