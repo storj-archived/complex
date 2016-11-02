@@ -119,13 +119,11 @@ describe('Renter', function() {
       var renter = new TestRenter(options);
       renter._initStorage();
       expect(renter.storage).to.be.instanceOf(Storage);
-      expect(Storage.args[0][0]).to.deep.equal({
-        host: 'localhost',
-        port: '37017',
-        name: 'storj-test',
-        hello: 'world'
-      });
-      expect(Storage.args[0][1].logger)
+      expect(Storage.args[0][0])
+        .to.equal('mongodb://localhost:37017/storj-test');
+      expect(Storage.args[0][1])
+        .to.deep.equal({ hello: 'world' });
+      expect(Storage.args[0][2].logger)
         .to.be.instanceOf(require('kad-logger-json'));
     });
   });
