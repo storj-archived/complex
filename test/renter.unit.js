@@ -14,7 +14,6 @@ var proxyquire = require('proxyquire');
 var expect = require('chai').expect;
 var HDKey = require('hdkey');
 var complex = require('..');
-var Storage = require('storj-service-storage-models');
 
 var seed = 'a0c42a9c3ac6abf2ba6a9946ae83af18f51bf1c9fa7dacc4c92513cc4dd015834' +
     '341c775dcd4c0fac73547c5662d81a9e9361a0aac604a73a321bd9103bce8af';
@@ -112,16 +111,22 @@ describe('Renter', function() {
           hello: 'world'
         }
       };
-      var renter = complex.createRenter(options);
+      var Storage = sinon.stub();
+      var TestRenter = proxyquire('../lib/renter', {
+        'storj-service-storage-models': Storage
+      });
+
+      var renter = new TestRenter(options);
       renter._initStorage();
       expect(renter.storage).to.be.instanceOf(Storage);
-      expect(renter.storage._options).to.deep.equal({
+      expect(Storage.args[0][0]).to.deep.equal({
         host: 'localhost',
         port: '37017',
         name: 'storj-test',
         hello: 'world'
       });
-      expect(renter.storage._log).to.be.instanceOf(require('kad-logger-json'));
+      expect(Storage.args[0][1].logger)
+        .to.be.instanceOf(require('kad-logger-json'));
     });
   });
 
@@ -130,7 +135,7 @@ describe('Renter', function() {
     afterEach(function() {
       sandbox.restore();
     });
-    it('will initialize network', function() {
+    it('will initialize network', function(done) {
       var options = {
         networkPrivateExtendedKey: hdKey.privateExtendedKey,
         networkIndex: 10,
@@ -182,6 +187,7 @@ describe('Renter', function() {
       expect(renter._logger.warn.callCount).to.equal(0);
       renter.network.emit('error', new Error('test'));
       expect(renter._logger.warn.callCount).to.equal(1);
+      done();
     });
   });
 
