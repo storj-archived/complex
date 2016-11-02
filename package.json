@@ -41,8 +41,8 @@
     "restify": "^4.1.1",
     "secp256k1": "^3.2.2",
     "storj-lib": "^5.0.0",
-    "storj-mongodb-adapter": "^3.0.0",
-    "storj-service-storage-models": "^4.0.0"
+    "storj-mongodb-adapter": "^4.0.0",
+    "storj-service-storage-models": "^5.0.0"
   },
   "devDependencies": {
     "chai": "^3.5.0",
