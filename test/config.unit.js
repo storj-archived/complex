@@ -17,6 +17,11 @@ var xpriv = 'xprv9xJ62Jwpr14Bbz63pamJV4Z3qT67JfqddRW55LR2bUQ38jty7G2TSVkE5Ro8' +
 var hdKey = masterKey.derive('m/3000\'/0\'');
 
 describe('Base Config', function() {
+  var sandbox = sinon.sandbox.create();
+  afterEach(function() {
+    sandbox.restore();
+  });
+
   it('will construct with/without new', function() {
     var opts = {
       logLevel: 4,
@@ -28,6 +33,79 @@ describe('Base Config', function() {
     var config2 = BaseConfig(opts);
     expect(config2).to.be.instanceOf(BaseConfig);
   });
+
+
+  it('will parse an array of configs', function() {
+    var config = [
+      {
+        type: 'Landlord',
+        opts: {
+          logLevel: 3,
+          amqpUrl: 'amqp://localhost',
+          amqpOpts: {},
+          serverPort: 8080,
+          serverOpts: {
+            certificate: null,
+            key: null,
+            authorization: {
+              username: 'user',
+              password: 'pass'
+            }
+          }
+        }
+      },
+      {
+        type: 'Renter',
+        opts: {
+          logLevel: 3,
+          amqpUrl: 'amqp://localhost',
+          amqpOpts: {},
+          mongoUrl: 'mongodb://localhost:27017/storj-test',
+          mongoOpts: {},
+          networkPrivateExtendedKey: '/tmp/storj-complex/hd-private.key',
+          migrationPrivateKey: '/tmp/storj-complex/private.key',
+          networkOpts: {
+            rpcPort: 4000,
+            rpcAddress: 'localhost',
+            doNotTraverseNat: true,
+            tunnelServerPort: 5000,
+            tunnelGatewayRange: {
+              min: 0,
+              max: 0
+            },
+            maxTunnels: 0,
+            seedList: [],
+            bridgeUri: null,
+            maxConnections: 250
+          }
+        }
+      }
+    ];
+
+    var readFileSync = sandbox.stub(fs, 'readFileSync');
+    readFileSync.onFirstCall().returns(JSON.stringify(config));
+    readFileSync.onSecondCall().returns(xpriv);
+    readFileSync.onThirdCall().returns(new Buffer('key'));
+    var conf = complex.createConfig('/tmp/somepath.json');
+    expect(conf[0]).to.be.instanceOf(LandlordConfig);
+    expect(conf[1]).to.be.instanceOf(RenterConfig);
+  });
+
+  it('will throw with invalid type', function() {
+    var config = [
+      {
+        type: 'Unknown',
+        opts: {}
+      }
+    ];
+
+    var readFileSync = sandbox.stub(fs, 'readFileSync');
+    readFileSync.onFirstCall().returns(JSON.stringify(config));
+    expect(function() {
+      complex.createConfig('/tmp/somepath.json');
+    }).to.throw('Invalid type supplied');
+  });
+
 });
 
 describe('Renter Config', function() {
