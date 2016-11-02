@@ -15,7 +15,7 @@ node_js:
 before_install:
   - export CXX="g++-4.8" CC="gcc-4.8"
 after_script:
-  - npm run coverage¬
+  - npm run coverage
   - cat ./coverage/lcov.info | ./node_modules/.bin/coveralls
 services:
   - mongodb
