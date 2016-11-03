@@ -24,7 +24,8 @@
       "amqpOpts": {},
       "mongoUrl": "mongodb://localhost:27017/__storj-complex-example",
       "mongoOpts": {},
-      "networkPrivateKey": "network-private-key.example",
+      "networkPrivateExtendedKey": "network-private-key.example",
+      "networkIndex": 0,
       "networkOpts": {
         "rpcPort": 4000,
         "rpcAddress": "127.0.0.1",
@@ -49,7 +50,8 @@
       "amqpOpts": {},
       "mongoUrl": "mongodb://localhost:27017/__storj-complex-example",
       "mongoOpts": {},
-      "networkPrivateKey": "network-private-key.example",
+      "networkPrivateExtendedKey": "network-private-key.example",
+      "networkIndex": 1,
       "networkOpts": {
         "rpcPort": 4001,
         "rpcAddress": "127.0.0.1",
@@ -74,7 +76,8 @@
       "amqpOpts": {},
       "mongoUrl": "mongodb://localhost:27017/__storj-complex-example",
       "mongoOpts": {},
-      "networkPrivateKey": "network-private-key.example",
+      "networkPrivateExtendedKey": "network-private-key.example",
+      "networkIndex": 2,
       "networkOpts": {
         "rpcPort": 4002,
         "rpcAddress": "127.0.0.1",

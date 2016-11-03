@@ -6,7 +6,8 @@
       "amqpOpts": {},
       "mongoUrl": "mongodb://localhost:27017/__storj-complex-example",
       "mongoOpts": {},
-      "networkPrivateKey": "network-private-key.example",
+      "networkPrivateExtendedKey": "network-private-key.example",
+      "networkIndex": 0,
       "networkOpts": {
         "rpcPort": 4000,
         "rpcAddress": "127.0.0.1",
