@@ -422,7 +422,7 @@ describe('Client', function() {
   });
 
   describe('#getRetrievalPointer', function() {
-    it('should call send with collect args', function(done) {
+    it('should call send with correct args', function(done) {
       var client = complex.createClient();
       client._send = sinon.stub().callsArg(2);
       var farmer = new storj.Contact({
@@ -443,7 +443,7 @@ describe('Client', function() {
   });
 
   describe('#getMirrorNodes', function() {
-    it('should call send with collect arguments', function(done) {
+    it('should call send with correct arguments', function(done) {
       var client = complex.createClient();
       client._send = sinon.stub().callsArg(2);
       var sources = [
@@ -476,7 +476,7 @@ describe('Client', function() {
   });
 
   describe('#getStorageOffer', function() {
-    it('should call send with collect params', function(done) {
+    it('should call send with correct params', function(done) {
       var client = complex.createClient();
       client._send = sinon.stub().callsArg(2);
       var contract = new storj.Contract();
