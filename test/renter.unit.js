@@ -516,7 +516,7 @@ describe('Renter', function() {
               nodeID: '955af05f3130ac5c70952a34a9aa710c9fbf812b',
               port: 3000,
               protocol: '0.10.0',
-              userAgent: '5.0.0'
+              userAgent: '5.1.0'
             },
             hash: 'fad8d3a30b5d40dae9e61f7f84bf9017e9f4bb2f',
             operation: 'PULL',
