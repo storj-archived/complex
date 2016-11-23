@@ -326,19 +326,32 @@ describe('Renter', function() {
       var renter = complex.createRenter(options);
       renter._handleNetworkEvents = sinon.stub();
       renter.network = {
-        join: sinon.stub().callsArg(0)
+        join: sinon.stub().callsArg(0),
+        contact: { nodeID: '4b783710baab517de2e3de5bae7e749c9d0e5170' }
       };
       var pubSocket = new EventEmitter();
       pubSocket.connect = sinon.stub();
-      var workSocket = new EventEmitter();
-      workSocket.connect = sinon.stub();
+      var workSockets = [
+        new EventEmitter(),
+        new EventEmitter(),
+        new EventEmitter(),
+        new EventEmitter(),
+        new EventEmitter(),
+        new EventEmitter(),
+        new EventEmitter(),
+        new EventEmitter(),
+        new EventEmitter()
+      ];
+      workSockets.forEach(function(s) {
+        s.connect = sinon.stub();
+      });
       renter._amqpContext = {
         socket: function(method) {
           switch(method) {
             case 'PUBLISH':
               return pubSocket;
             case 'WORKER':
-              return workSocket;
+              return workSockets.shift();
           }
         }
       };
@@ -346,21 +359,28 @@ describe('Renter', function() {
       expect(renter.network.join.callCount).to.equal(1);
       expect(pubSocket.connect.callCount).to.equal(1);
       expect(pubSocket.connect.args[0][0]).to.equal('work.close');
-      expect(workSocket.connect.callCount).to.equal(1);
-      expect(workSocket.connect.args[0][0]).to.equal('work.open');
-
+      expect(renter.workers['work-x-47'].connect.callCount).to.equal(1);
+      expect(renter.workers['work-x-48'].connect.callCount).to.equal(1);
+      expect(renter.workers['work-x-49'].connect.callCount).to.equal(1);
+      expect(renter.workers['work-x-4a'].connect.callCount).to.equal(1);
+      expect(renter.workers['work-x-4b'].connect.callCount).to.equal(1);
+      expect(renter.workers['work-x-4c'].connect.callCount).to.equal(1);
+      expect(renter.workers['work-x-4d'].connect.callCount).to.equal(1);
+      expect(renter.workers['work-x-4e'].connect.callCount).to.equal(1);
+      expect(renter.workers['work-x-4f'].connect.callCount).to.equal(1);
       var data = {};
-      renter.worker.emit('data', data);
+      renter.workers['work-x-47'].emit('data', data);
       expect(Renter.prototype._handleWork.callCount).to.equal(1);
       expect(Renter.prototype._handleWork.args[0][0]).to.equal(data);
       expect(renter._handleNetworkEvents.callCount).to.equal(1);
     });
-    it('will emit error from network join', function() {
+    it('will emit error from network join', function(done) {
       sandbox.stub(Renter.prototype, '_handleWork');
       var renter = complex.createRenter(options);
       renter._handleNetworkEvents = sinon.stub();
       renter.network = {
-        join: sinon.stub().callsArgWith(0, new Error('test'))
+        join: sinon.stub().callsArgWith(0, new Error('test')),
+        contact: { nodeID: '4b783710baab517de2e3de5bae7e749c9d0e5170' }
       };
       var pubSocket = new EventEmitter();
       pubSocket.connect = sinon.stub();
@@ -376,9 +396,11 @@ describe('Renter', function() {
           }
         }
       };
-      expect(function() {
-        renter._initMessageBus();
-      }).to.throw(Error);
+      renter.on('error', function(err) {
+        expect(err.message).to.equal('test');
+        done();
+      });
+      renter._initMessageBus();
     });
   });
 

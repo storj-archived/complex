@@ -1,6 +1,6 @@
 {
   "name": "storj-complex",
-  "version": "2.0.1",
+  "version": "2.1.0",
   "description": "manage many storj renter nodes with remote control capabilities",
   "main": "index.js",
   "bin": {
