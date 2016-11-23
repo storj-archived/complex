@@ -34,7 +34,6 @@
     "hdkey": "^0.7.1",
     "kad-logger-json": "^0.1.2",
     "merge": "^1.2.0",
-    "node-uuid": "^1.4.7",
     "rabbit.js": "^0.4.4",
     "readable-stream": "^2.1.5",
     "request": "^2.75.0",
@@ -42,7 +41,8 @@
     "secp256k1": "^3.2.2",
     "storj-lib": "^5.0.0",
     "storj-mongodb-adapter": "^4.0.1",
-    "storj-service-storage-models": "^5.0.2"
+    "storj-service-storage-models": "^5.0.2",
+    "uuid": "^3.0.0"
   },
   "devDependencies": {
     "chai": "^3.5.0",
