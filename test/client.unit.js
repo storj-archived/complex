@@ -324,7 +324,7 @@ describe('Client', function() {
       expect(result[0].lastSeen).to.be.a('number');
       delete result[0].lastSeen;
       expect(JSON.parse(JSON.stringify(result[0]))).to.deep.equal({
-        userAgent: '5.1.0',
+        userAgent: '5.1.2',
         protocol: '0.10.0',
         address: '127.0.0.1',
         port: 3030,
@@ -369,7 +369,7 @@ describe('Client', function() {
       expect(result[0].lastSeen).to.be.a('number');
       delete result[0].lastSeen;
       expect(JSON.parse(JSON.stringify(result[0]))).to.deep.equal({
-        userAgent: '5.1.0',
+        userAgent: '5.1.2',
         protocol: '0.10.0',
         address: '127.0.0.1',
         port: 3030,
