@@ -322,9 +322,10 @@ describe('Client', function() {
       ];
       var result = client._serializeRequestArguments(method, args);
       expect(result[0].lastSeen).to.be.a('number');
+      expect(result[0].userAgent).to.be.a('string');
       delete result[0].lastSeen;
+      delete result[0].userAgent;
       expect(JSON.parse(JSON.stringify(result[0]))).to.deep.equal({
-        userAgent: '5.1.2',
         protocol: '0.10.0',
         address: '127.0.0.1',
         port: 3030,
@@ -367,9 +368,10 @@ describe('Client', function() {
       ];
       var result = client._serializeRequestArguments(method, args);
       expect(result[0].lastSeen).to.be.a('number');
+      expect(result[0].userAgent).to.be.a('string');
       delete result[0].lastSeen;
+      delete result[0].userAgent;
       expect(JSON.parse(JSON.stringify(result[0]))).to.deep.equal({
-        userAgent: '5.1.2',
         protocol: '0.10.0',
         address: '127.0.0.1',
         port: 3030,

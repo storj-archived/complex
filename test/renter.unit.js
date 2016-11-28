@@ -319,7 +319,9 @@ describe('Renter', function() {
     });
     var options = {
       networkPrivateExtendedKey: hdKey.privateExtendedKey,
-      networkIndex: 10
+      networkIndex: 10,
+      totalRenters: 32,
+      renterOverlap: 1
     };
     it('setup sockets, connect, join network and handle work', function() {
       sandbox.stub(Renter.prototype, '_handleWork');
@@ -527,7 +529,9 @@ describe('Renter', function() {
       var parsed = JSON.parse(write.args[0][0].toString());
       // remove last seen property that changes
       expect(parsed.result[1].farmer.lastSeen).to.be.a('number');
+      expect(parsed.result[1].farmer.userAgent).to.be.a('string');
       delete parsed.result[1].farmer.lastSeen;
+      delete parsed.result[1].farmer.userAgent;
       expect(parsed).to.deep.equal({
         id: 'someid',
         result: [
@@ -537,8 +541,7 @@ describe('Renter', function() {
               address: '127.0.0.1',
               nodeID: '955af05f3130ac5c70952a34a9aa710c9fbf812b',
               port: 3000,
-              protocol: '0.10.0',
-              userAgent: '5.1.2'
+              protocol: '0.10.0'
             },
             hash: 'fad8d3a30b5d40dae9e61f7f84bf9017e9f4bb2f',
             operation: 'PULL',
