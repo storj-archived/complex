@@ -373,7 +373,9 @@ describe('Renter', function() {
       var data = {};
       renter.workers['work-x-47'].emit('data', data);
       expect(Renter.prototype._handleWork.callCount).to.equal(1);
-      expect(Renter.prototype._handleWork.args[0][0]).to.equal('work-x-47');
+      expect(Renter.prototype._handleWork.args[0][0]).to.be.instanceOf(
+        EventEmitter
+      );
       expect(Renter.prototype._handleWork.args[0][1]).to.equal(data);
       expect(renter._handleNetworkEvents.callCount).to.equal(1);
     });
@@ -481,7 +483,7 @@ describe('Renter', function() {
         method: 'someUnknownMethod',
         id: 'someid'
       }));
-      renter._handleWork('test', buffer);
+      renter._handleWork(renter.workers.test, buffer);
       expect(write.callCount).to.equal(1);
       expect(JSON.parse(write.args[0][0].toString())).to.deep.equal({
         id: 'someid',
@@ -525,7 +527,7 @@ describe('Renter', function() {
           }
         ]
       }));
-      renter._handleWork('test', buffer);
+      renter._handleWork(renter.workers.test, buffer);
       expect(write.callCount).to.equal(1);
       var parsed = JSON.parse(write.args[0][0].toString());
       // remove last seen property that changes
@@ -590,7 +592,7 @@ describe('Renter', function() {
         id: 'someid',
         params: [ farmer, item ]
       }));
-      renter._handleWork('test', buffer);
+      renter._handleWork(renter.workers.test, buffer);
       expect(write.callCount).to.equal(1);
       var parsed = JSON.parse(write.args[0][0].toString());
       expect(parsed).to.deep.equal({
@@ -622,7 +624,7 @@ describe('Renter', function() {
         id: 'someid',
         params: [ farmer, item ]
       }));
-      renter._handleWork('test', buffer);
+      renter._handleWork(renter.workers.test, buffer);
       expect(write.callCount).to.equal(1);
       var parsed = JSON.parse(write.args[0][0].toString());
       expect(parsed).to.deep.equal({
@@ -657,7 +659,7 @@ describe('Renter', function() {
         id: 'someid',
         params: [ farmer, item ]
       }));
-      renter._handleWork('test', buffer);
+      renter._handleWork(renter.workers.test, buffer);
       expect(write.callCount).to.equal(1);
       var parsed = JSON.parse(write.args[0][0].toString());
       expect(parsed).to.deep.equal({

@@ -1,5 +1,7 @@
 'use strict';
 
+/* jshint maxstatements:false */
+
 var storj = require('storj-lib');
 var request = require('request');
 var sinon = require('sinon');
