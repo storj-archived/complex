@@ -319,26 +319,41 @@ describe('Renter', function() {
     });
     var options = {
       networkPrivateExtendedKey: hdKey.privateExtendedKey,
-      networkIndex: 10
+      networkIndex: 10,
+      totalRenters: 32,
+      renterOverlap: 1
     };
     it('setup sockets, connect, join network and handle work', function() {
       sandbox.stub(Renter.prototype, '_handleWork');
       var renter = complex.createRenter(options);
       renter._handleNetworkEvents = sinon.stub();
       renter.network = {
-        join: sinon.stub().callsArg(0)
+        join: sinon.stub().callsArg(0),
+        contact: { nodeID: '4b783710baab517de2e3de5bae7e749c9d0e5170' }
       };
       var pubSocket = new EventEmitter();
       pubSocket.connect = sinon.stub();
-      var workSocket = new EventEmitter();
-      workSocket.connect = sinon.stub();
+      var workSockets = [
+        new EventEmitter(),
+        new EventEmitter(),
+        new EventEmitter(),
+        new EventEmitter(),
+        new EventEmitter(),
+        new EventEmitter(),
+        new EventEmitter(),
+        new EventEmitter(),
+        new EventEmitter()
+      ];
+      workSockets.forEach(function(s) {
+        s.connect = sinon.stub();
+      });
       renter._amqpContext = {
         socket: function(method) {
           switch(method) {
             case 'PUBLISH':
               return pubSocket;
             case 'WORKER':
-              return workSocket;
+              return workSockets.shift();
           }
         }
       };
@@ -346,21 +361,31 @@ describe('Renter', function() {
       expect(renter.network.join.callCount).to.equal(1);
       expect(pubSocket.connect.callCount).to.equal(1);
       expect(pubSocket.connect.args[0][0]).to.equal('work.close');
-      expect(workSocket.connect.callCount).to.equal(1);
-      expect(workSocket.connect.args[0][0]).to.equal('work.open');
-
+      expect(renter.workers['work-x-47'].connect.callCount).to.equal(1);
+      expect(renter.workers['work-x-48'].connect.callCount).to.equal(1);
+      expect(renter.workers['work-x-49'].connect.callCount).to.equal(1);
+      expect(renter.workers['work-x-4a'].connect.callCount).to.equal(1);
+      expect(renter.workers['work-x-4b'].connect.callCount).to.equal(1);
+      expect(renter.workers['work-x-4c'].connect.callCount).to.equal(1);
+      expect(renter.workers['work-x-4d'].connect.callCount).to.equal(1);
+      expect(renter.workers['work-x-4e'].connect.callCount).to.equal(1);
+      expect(renter.workers['work-x-4f'].connect.callCount).to.equal(1);
       var data = {};
-      renter.worker.emit('data', data);
+      renter.workers['work-x-47'].emit('data', data);
       expect(Renter.prototype._handleWork.callCount).to.equal(1);
-      expect(Renter.prototype._handleWork.args[0][0]).to.equal(data);
+      expect(Renter.prototype._handleWork.args[0][0]).to.be.instanceOf(
+        EventEmitter
+      );
+      expect(Renter.prototype._handleWork.args[0][1]).to.equal(data);
       expect(renter._handleNetworkEvents.callCount).to.equal(1);
     });
-    it('will emit error from network join', function() {
+    it('will emit error from network join', function(done) {
       sandbox.stub(Renter.prototype, '_handleWork');
       var renter = complex.createRenter(options);
       renter._handleNetworkEvents = sinon.stub();
       renter.network = {
-        join: sinon.stub().callsArgWith(0, new Error('test'))
+        join: sinon.stub().callsArgWith(0, new Error('test')),
+        contact: { nodeID: '4b783710baab517de2e3de5bae7e749c9d0e5170' }
       };
       var pubSocket = new EventEmitter();
       pubSocket.connect = sinon.stub();
@@ -376,9 +401,11 @@ describe('Renter', function() {
           }
         }
       };
-      expect(function() {
-        renter._initMessageBus();
-      }).to.throw(Error);
+      renter.on('error', function(err) {
+        expect(err.message).to.equal('test');
+        done();
+      });
+      renter._initMessageBus();
     });
   });
 
@@ -445,8 +472,8 @@ describe('Renter', function() {
 
     it('will give method not found message', function() {
       var renter = complex.createRenter(options);
-      renter.worker = {
-        ack: sinon.stub()
+      renter.workers = {
+        test: { ack: sinon.stub() }
       };
       var write = sinon.stub();
       renter.notifier = {
@@ -456,7 +483,7 @@ describe('Renter', function() {
         method: 'someUnknownMethod',
         id: 'someid'
       }));
-      renter._handleWork(buffer);
+      renter._handleWork(renter.workers.test, buffer);
       expect(write.callCount).to.equal(1);
       expect(JSON.parse(write.args[0][0].toString())).to.deep.equal({
         id: 'someid',
@@ -465,7 +492,7 @@ describe('Renter', function() {
           message: 'Method not found'
         }
       });
-      expect(renter.worker.ack.callCount).to.equal(1);
+      expect(renter.workers.test.ack.callCount).to.equal(1);
     });
 
     it('will serialize/deserialize args with redirected method', function() {
@@ -480,8 +507,8 @@ describe('Renter', function() {
         'PULL'
       );
       renter._getRetrievalPointer = sinon.stub().callsArgWith(2, null, pointer);
-      renter.worker = {
-        ack: sinon.stub()
+      renter.workers = {
+        test: { ack: sinon.stub() }
       };
       var write = sinon.stub();
       renter.notifier = {
@@ -500,12 +527,14 @@ describe('Renter', function() {
           }
         ]
       }));
-      renter._handleWork(buffer);
+      renter._handleWork(renter.workers.test, buffer);
       expect(write.callCount).to.equal(1);
       var parsed = JSON.parse(write.args[0][0].toString());
       // remove last seen property that changes
       expect(parsed.result[1].farmer.lastSeen).to.be.a('number');
+      expect(parsed.result[1].farmer.userAgent).to.be.a('string');
       delete parsed.result[1].farmer.lastSeen;
+      delete parsed.result[1].farmer.userAgent;
       expect(parsed).to.deep.equal({
         id: 'someid',
         result: [
@@ -515,8 +544,7 @@ describe('Renter', function() {
               address: '127.0.0.1',
               nodeID: '955af05f3130ac5c70952a34a9aa710c9fbf812b',
               port: 3000,
-              protocol: '0.10.0',
-              userAgent: '5.1.0'
+              protocol: '0.10.0'
             },
             hash: 'fad8d3a30b5d40dae9e61f7f84bf9017e9f4bb2f',
             operation: 'PULL',
@@ -524,7 +552,7 @@ describe('Renter', function() {
           }
         ]
       });
-      expect(renter.worker.ack.callCount).to.equal(1);
+      expect(renter.workers.test.ack.callCount).to.equal(1);
     });
 
     it('will serialize/deserialize args for non-redirect', function() {
@@ -544,8 +572,8 @@ describe('Renter', function() {
         '07a925e3bb75cfc5e00e15207e4a90ee6c897513'
       ];
       var renter = complex.createRenter(options);
-      renter.worker = {
-        ack: sinon.stub()
+      renter.workers = {
+        test: { ack: sinon.stub() }
       };
       renter.network = {
         getStorageProof: sinon.stub().callsArgWith(2, null, proof)
@@ -564,20 +592,20 @@ describe('Renter', function() {
         id: 'someid',
         params: [ farmer, item ]
       }));
-      renter._handleWork(buffer);
+      renter._handleWork(renter.workers.test, buffer);
       expect(write.callCount).to.equal(1);
       var parsed = JSON.parse(write.args[0][0].toString());
       expect(parsed).to.deep.equal({
         id: 'someid',
         result: [ null, proof ]
       });
-      expect(renter.worker.ack.callCount).to.equal(1);
+      expect(renter.workers.test.ack.callCount).to.equal(1);
     });
 
     it('will give error from calling method', function() {
       var renter = complex.createRenter(options);
-      renter.worker = {
-        ack: sinon.stub()
+      renter.workers = {
+        test: { ack: sinon.stub() }
       };
       renter.network = {
         getStorageProof: sinon.stub().callsArgWith(2, new Error('test'))
@@ -596,7 +624,7 @@ describe('Renter', function() {
         id: 'someid',
         params: [ farmer, item ]
       }));
-      renter._handleWork(buffer);
+      renter._handleWork(renter.workers.test, buffer);
       expect(write.callCount).to.equal(1);
       var parsed = JSON.parse(write.args[0][0].toString());
       expect(parsed).to.deep.equal({
@@ -606,13 +634,13 @@ describe('Renter', function() {
           message: 'test'
         }
       });
-      expect(renter.worker.ack.callCount).to.equal(1);
+      expect(renter.workers.test.ack.callCount).to.equal(1);
     });
 
     it('will give error if calling method', function() {
       var renter = complex.createRenter(options);
-      renter.worker = {
-        ack: sinon.stub()
+      renter.workers = {
+        test: { ack: sinon.stub() }
       };
       renter.network = {
         getStorageProof: sinon.stub().throws(new Error('test'))
@@ -631,7 +659,7 @@ describe('Renter', function() {
         id: 'someid',
         params: [ farmer, item ]
       }));
-      renter._handleWork(buffer);
+      renter._handleWork(renter.workers.test, buffer);
       expect(write.callCount).to.equal(1);
       var parsed = JSON.parse(write.args[0][0].toString());
       expect(parsed).to.deep.equal({
@@ -641,7 +669,7 @@ describe('Renter', function() {
           message: 'test'
         }
       });
-      expect(renter.worker.ack.callCount).to.equal(1);
+      expect(renter.workers.test.ack.callCount).to.equal(1);
     });
 
   });

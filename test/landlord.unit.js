@@ -305,22 +305,51 @@ describe('Landlord', function() {
       var landlord = complex.createLandlord({ requestTimout: 1 });
       var req = {
         body: {
-          id: 'someid'
+          id: 'someid',
+          method: 'getConsignmentPointer',
+          params: [{ nodeID: '4b783710baab517de2e3de5bae7e749c9d0e5170' }]
         }
       };
       var res = {};
-      landlord.pusher = {
-        write: sinon.stub()
+      landlord._workerSockets = {
+        'work-x-4b': { write: sinon.stub() }
       };
       landlord._checkJsonRpcRequest = sandbox.stub();
       landlord._setJsonRpcRequestTimeout = sandbox.stub();
       landlord._handleJsonRpcRequest(req, res);
       expect(landlord._checkJsonRpcRequest.callCount).to.equal(1);
       expect(landlord._setJsonRpcRequestTimeout.callCount).to.equal(1);
-      expect(landlord.pusher.write.callCount).to.equal(1);
+      expect(landlord._workerSockets['work-x-4b'].write.callCount).to.equal(1);
       var expected = new Buffer(JSON.stringify(req.body));
-      expect(landlord.pusher.write.args[0][0]).to.deep.equal(expected);
+      expect(
+        landlord._workerSockets['work-x-4b'].write.args[0][0]
+      ).to.deep.equal(expected);
     });
+  });
+
+  describe('#_getKeyFromRpcMessage', function() {
+
+    it('should use the nodeID of farmer', function() {
+      expect(Landlord.prototype._getKeyFromRpcMessage({
+        method: 'getStorageProof',
+        params: [{ nodeID: 'nodeid' }]
+      })).to.equal('nodeid');
+    });
+
+    it('should use the data hash of contract', function() {
+      expect(Landlord.prototype._getKeyFromRpcMessage({
+        method: 'getStorageOffer',
+        params: [{ data_hash: 'datahash' }]
+      })).to.equal('datahash');
+    });
+
+    it('should be random', function() {
+      expect(Landlord.prototype._getKeyFromRpcMessage({
+        method: 'someUnknownMethod',
+        params: []
+      })).to.have.lengthOf(2);
+    });
+
   });
 
   describe('#_isValidJsonRpcRequest', function() {
