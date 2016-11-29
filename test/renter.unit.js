@@ -497,15 +497,15 @@ describe('Renter', function() {
 
     it('will serialize/deserialize args with redirected method', function() {
       var renter = complex.createRenter(options);
-      var pointer = new storj.DataChannelPointer(
-        storj.Contact({
+      var pointer = {
+        farmer: storj.Contact({
           address: '127.0.0.1',
           port: 3000
         }),
-        'fad8d3a30b5d40dae9e61f7f84bf9017e9f4bb2f',
-        '02d8b561ac9297cf2d67fe5d8fe673305e84e40a',
-        'PULL'
-      );
+        hash: 'fad8d3a30b5d40dae9e61f7f84bf9017e9f4bb2f',
+        token: '02d8b561ac9297cf2d67fe5d8fe673305e84e40a',
+        operation: 'PULL'
+      };
       renter._getRetrievalPointer = sinon.stub().callsArgWith(2, null, pointer);
       renter.workers = {
         test: { ack: sinon.stub() }

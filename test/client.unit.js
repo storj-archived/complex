@@ -328,7 +328,7 @@ describe('Client', function() {
       delete result[0].lastSeen;
       delete result[0].userAgent;
       expect(JSON.parse(JSON.stringify(result[0]))).to.deep.equal({
-        protocol: '0.10.0',
+        protocol: '1.0.0',
         address: '127.0.0.1',
         port: 3030,
         nodeID: 'a978efc9158dece8b6d34f605314b5dc8e003aaa',
@@ -374,7 +374,7 @@ describe('Client', function() {
       delete result[0].lastSeen;
       delete result[0].userAgent;
       expect(JSON.parse(JSON.stringify(result[0]))).to.deep.equal({
-        protocol: '0.10.0',
+        protocol: '1.0.0',
         address: '127.0.0.1',
         port: 3030,
         nodeID: 'a978efc9158dece8b6d34f605314b5dc8e003aaa'
@@ -451,15 +451,15 @@ describe('Client', function() {
       var client = complex.createClient();
       client._send = sinon.stub().callsArg(2);
       var sources = [
-        new storj.DataChannelPointer(
-          storj.Contact({
+        {
+          farmer: storj.Contact({
             address: '127.0.0.1',
             port: 3000
           }),
-          'fad8d3a30b5d40dae9e61f7f84bf9017e9f4bb2f',
-          '02d8b561ac9297cf2d67fe5d8fe673305e84e40a',
-          'PULL'
-        )
+          hash: 'fad8d3a30b5d40dae9e61f7f84bf9017e9f4bb2f',
+          token: '02d8b561ac9297cf2d67fe5d8fe673305e84e40a',
+          operation: 'PULL'
+        }
       ];
       var destinations = [
         new storj.Contact({
