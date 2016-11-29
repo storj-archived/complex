@@ -167,7 +167,6 @@ describe('Client', function() {
         }
       ];
       var result = client._deserializeResponseArguments(method, args);
-      expect(result[1]).to.be.instanceOf(storj.DataChannelPointer);
       expect(result[1].farmer.address).to.equal('127.0.0.1');
       expect(result[1].farmer.port).to.equal(3000);
       expect(result[1].hash).to.equal(
@@ -195,7 +194,6 @@ describe('Client', function() {
         }
       ];
       var result = client._deserializeResponseArguments(method, args);
-      expect(result[1]).to.be.instanceOf(storj.DataChannelPointer);
       expect(result[1].farmer.address).to.equal('127.0.0.1');
       expect(result[1].farmer.port).to.equal(3000);
       expect(result[1].hash).to.equal(
