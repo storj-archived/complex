@@ -312,6 +312,105 @@ describe('Renter', function() {
     });
   });
 
+  describe('_getQueueSpan', function() {
+    var options = {
+      networkPrivateExtendedKey: hdKey.privateExtendedKey,
+      networkIndex: 10
+    };
+    it('0 renter', function() {
+      var renter = complex.createRenter(options);
+      expect(function() {
+        renter._getQueueSpan(256, 0, 0.999);
+      }).to.throw('y is expected');
+    });
+    it('Infinity renter', function() {
+      var renter = complex.createRenter(options);
+      expect(function() {
+        renter._getQueueSpan(256, Infinity, 0.999);
+      }).to.throw('y is expected');
+    });
+    it('NaN renter', function() {
+      var renter = complex.createRenter(options);
+      expect(function() {
+        renter._getQueueSpan(256, NaN, 0.999);
+      }).to.throw('y is expected');
+    });
+    it('1 renter', function() {
+      var renter = complex.createRenter(options);
+      var span = renter._getQueueSpan(256, 1, 0.999);
+      expect(Math.ceil(span)).to.equal(256);
+    });
+    it('2 renters', function() {
+      var renter = complex.createRenter(options);
+      var span = renter._getQueueSpan(256, 2, 0.999);
+      expect(Math.ceil(span)).to.equal(248);
+    });
+    it('3 renters', function() {
+      var renter = complex.createRenter(options);
+      var span = renter._getQueueSpan(256, 3, 0.999);
+      expect(Math.ceil(span)).to.equal(231);
+    });
+    it('4 renters', function() {
+      var renter = complex.createRenter(options);
+      var span = renter._getQueueSpan(256, 4, 0.999);
+      expect(Math.ceil(span)).to.equal(211);
+    });
+    it('32 renters', function() {
+      var renter = complex.createRenter(options);
+      var span = renter._getQueueSpan(256, 32, 0.999);
+      expect(Math.ceil(span)).to.equal(50);
+    });
+    it('64 renters', function() {
+      var renter = complex.createRenter(options);
+      var span = renter._getQueueSpan(256, 64, 0.999);
+      expect(Math.ceil(span)).to.equal(27);
+    });
+    it('96 renters', function() {
+      var renter = complex.createRenter(options);
+      var span = renter._getQueueSpan(256, 96, 0.999);
+      expect(Math.ceil(span)).to.equal(18);
+    });
+    it('128 renters', function() {
+      var renter = complex.createRenter(options);
+      var span = renter._getQueueSpan(256, 128, 0.999);
+      expect(Math.ceil(span)).to.equal(14);
+    });
+    it('160 renters', function() {
+      var renter = complex.createRenter(options);
+      var span = renter._getQueueSpan(256, 160, 0.999);
+      expect(Math.ceil(span)).to.equal(11);
+    });
+    it('192 renters', function() {
+      var renter = complex.createRenter(options);
+      var span = renter._getQueueSpan(256, 192, 0.999);
+      expect(Math.ceil(span)).to.equal(10);
+    });
+    it('224 renters', function() {
+      var renter = complex.createRenter(options);
+      var span = renter._getQueueSpan(256, 224, 0.999);
+      expect(Math.ceil(span)).to.equal(8);
+    });
+    it('256 renters', function() {
+      var renter = complex.createRenter(options);
+      var span = renter._getQueueSpan(256, 256, 0.999);
+      expect(Math.ceil(span)).to.equal(7);
+    });
+  });
+
+  describe('_getQueueOffset', function() {
+    var options = {
+      networkPrivateExtendedKey: hdKey.privateExtendedKey,
+      networkIndex: 10,
+      totalRenters: 160,
+      renterOverlap: 3
+    };
+    it('should multiply span by overlap and give half the result', function() {
+      var renter = complex.createRenter(options);
+      var offset = renter._getQueueOffset();
+      expect(offset).to.equal(17);
+    });
+  });
+
   describe('_initMessageBus', function() {
     var sandbox = sinon.sandbox.create();
     afterEach(function() {
@@ -320,7 +419,7 @@ describe('Renter', function() {
     var options = {
       networkPrivateExtendedKey: hdKey.privateExtendedKey,
       networkIndex: 10,
-      totalRenters: 32,
+      totalRenters: 256,
       renterOverlap: 1
     };
     it('setup sockets, connect, join network and handle work', function() {
