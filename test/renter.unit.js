@@ -142,8 +142,7 @@ describe('Renter', function() {
           rpcAddress: '127.0.0.1',
           doNotTraverseNat: true,
           maxTunnels: 10,
-          tunnelServerPort: 8001,
-          tunnelGatewayRange: 2,
+          tunnelGatewayRange: {},
           bridgeUri: 'http://localhost',
           seedList: [
             'storj://127.0.0.1:3000/955af05f3130ac5c70952a34a9aa710c9fbf812b'
@@ -162,7 +161,7 @@ describe('Renter', function() {
         'storj://127.0.0.1:3000/955af05f3130ac5c70952a34a9aa710c9fbf812b'
       ];
       renter._initNetwork(seeds);
-      expect(renter.network).to.be.instanceOf(storj.RenterInterface);
+      expect(renter.network).to.be.instanceOf(storj.Renter);
       expect(renter.network.hdKey.privateExtendedKey).to.equal(
         options.networkPrivateExtendedKey
       );
@@ -177,10 +176,7 @@ describe('Renter', function() {
       expect(renter.network._options.rpcAddress).to.equal('127.0.0.1');
       expect(renter.network._options.doNotTraverseNat).to.equal(true);
       expect(renter.network._options.maxTunnels).to.equal(10);
-      expect(renter.network._options.tunnelServerPort).to.equal(8001);
-      expect(renter.network._options.tunnelGatewayRange).to.equal(2);
       expect(renter.network._options.maxConnections).to.equal(10);
-
       sandbox.stub(renter._logger, 'warn');
       expect(renter._logger.warn.callCount).to.equal(0);
       renter.network.emit('error', new Error('test'));
@@ -596,15 +592,15 @@ describe('Renter', function() {
 
     it('will serialize/deserialize args with redirected method', function() {
       var renter = complex.createRenter(options);
-      var pointer = new storj.DataChannelPointer(
-        storj.Contact({
+      var pointer = {
+        farmer: storj.Contact({
           address: '127.0.0.1',
           port: 3000
         }),
-        'fad8d3a30b5d40dae9e61f7f84bf9017e9f4bb2f',
-        '02d8b561ac9297cf2d67fe5d8fe673305e84e40a',
-        'PULL'
-      );
+        hash: 'fad8d3a30b5d40dae9e61f7f84bf9017e9f4bb2f',
+        token: '02d8b561ac9297cf2d67fe5d8fe673305e84e40a',
+        operation: 'PULL'
+      };
       renter._getRetrievalPointer = sinon.stub().callsArgWith(2, null, pointer);
       renter.workers = {
         test: { ack: sinon.stub() }
@@ -643,7 +639,7 @@ describe('Renter', function() {
               address: '127.0.0.1',
               nodeID: '955af05f3130ac5c70952a34a9aa710c9fbf812b',
               port: 3000,
-              protocol: '0.10.0'
+              protocol: '1.0.0'
             },
             hash: 'fad8d3a30b5d40dae9e61f7f84bf9017e9f4bb2f',
             operation: 'PULL',
@@ -891,9 +887,6 @@ describe('Renter', function() {
         ]
       ];
       var result = renter._deserializeArguments(method, args);
-      result[0].forEach(function(data) {
-        expect(data).to.be.instanceOf(storj.DataChannelPointer);
-      });
       result[1].forEach(function(data) {
         expect(data).to.be.instanceOf(storj.Contact);
       });
