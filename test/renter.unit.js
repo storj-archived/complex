@@ -1542,7 +1542,7 @@ describe('Renter', function() {
       expect(renter.network.getOfferStream.callCount).to.equal(1);
       expect(renter.network.getOfferStream.args[0][0]).to.equal(contract);
       expect(renter.network.getOfferStream.args[0][1]).to.deep.equal({
-        maxOffers: 12,
+        maxOffers: 24,
         farmerBlacklist: blacklist
       });
       var offer0 = {
