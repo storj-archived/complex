@@ -244,6 +244,32 @@ describe('Landlord', function() {
   });
 
   describe('#_setJsonRpcRequestTimeout', function() {
+    it('will log method and id on timeout', function(done) {
+      var landlord = complex.createLandlord({ requestTimeout: 1 });
+      sandbox.stub();
+      var send = sinon.stub();
+      landlord._pendingResponses.someid = {
+        send: send
+      };
+      sandbox.stub(landlord._logger, 'warn');
+      var req = {
+        body: {
+          id: 'someid',
+          method: 'getRetrievalPointer'
+        }
+      };
+      landlord._setJsonRpcRequestTimeout(req);
+      setTimeout(function() {
+        expect(landlord._logger.warn.callCount).to.equal(1);
+        expect(landlord._logger.warn.args[0][0])
+          .to.equal('job timed out, method: %s, id: %s');
+        expect(landlord._logger.warn.args[0][1])
+          .to.equal('getRetrievalPointer');
+        expect(landlord._logger.warn.args[0][2])
+          .to.equal('someid');
+        done();
+      }, 2);
+    });
     it('will send error after timeout ', function(done) {
       var landlord = complex.createLandlord({ requestTimeout: 1 });
       var send = sandbox.stub();
