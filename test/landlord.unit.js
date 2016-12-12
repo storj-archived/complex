@@ -244,7 +244,7 @@ describe('Landlord', function() {
   });
 
   describe('#_setJsonRpcRequestTimeout', function() {
-    it('will log method and id on timeout', function(done) {
+    it('will log method, id, data_hash and node_id', function(done) {
       var landlord = complex.createLandlord({ requestTimeout: 1 });
       sandbox.stub();
       var send = sinon.stub();
@@ -279,6 +279,40 @@ describe('Landlord', function() {
         done();
       }, 2);
     });
+
+    it('will log method, id and data_hash on timeout', function(done) {
+      var landlord = complex.createLandlord({ requestTimeout: 1 });
+      sandbox.stub();
+      var send = sinon.stub();
+      landlord._pendingResponses.someid = {
+        send: send
+      };
+      sandbox.stub(landlord._logger, 'warn');
+      var req = {
+        body: {
+          id: 'someid',
+          params: [
+            {
+              data_hash: 'data_hash'
+            }
+          ],
+          method: 'getStorageOffer'
+        }
+      };
+      landlord._setJsonRpcRequestTimeout(req);
+      setTimeout(function() {
+        expect(landlord._logger.warn.callCount).to.equal(1);
+        expect(landlord._logger.warn.args[0][0])
+          .to.equal('job timed out, method: %s, id: %s, ' +
+                    'data_hash: %s, node_id: %s');
+        expect(landlord._logger.warn.args[0][1])
+          .to.equal('getStorageOffer');
+        expect(landlord._logger.warn.args[0][2])
+          .to.equal('someid');
+        done();
+      }, 2);
+    });
+    
     it('will send error after timeout ', function(done) {
       var landlord = complex.createLandlord({ requestTimeout: 1 });
       var send = sandbox.stub();
