@@ -255,6 +255,14 @@ describe('Landlord', function() {
       var req = {
         body: {
           id: 'someid',
+          params: [
+            {
+              nodeID: 'nodeid'
+            },
+            {
+              data_hash: 'data_hash'
+            }
+          ],
           method: 'getRetrievalPointer'
         }
       };
@@ -262,7 +270,8 @@ describe('Landlord', function() {
       setTimeout(function() {
         expect(landlord._logger.warn.callCount).to.equal(1);
         expect(landlord._logger.warn.args[0][0])
-          .to.equal('job timed out, method: %s, id: %s');
+          .to.equal('job timed out, method: %s, id: %s, ' +
+                    'data_hash: %s, node_id: %s');
         expect(landlord._logger.warn.args[0][1])
           .to.equal('getRetrievalPointer');
         expect(landlord._logger.warn.args[0][2])
