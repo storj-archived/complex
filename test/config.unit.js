@@ -43,6 +43,8 @@ describe('Base Config', function() {
           logLevel: 3,
           amqpUrl: 'amqp://localhost',
           amqpOpts: {},
+          mongoUrl: 'mongodb://localhost:27017/storj-test',
+          mongoOpts: {},
           serverPort: 8080,
           serverOpts: {
             certificate: null,
@@ -229,7 +231,9 @@ describe('Landlord Config', function() {
       amqpUrl: 'amqp://localhost',
       amqpOpts: {},
       serverPort: 3030,
-      serverOpts: {}
+      serverOpts: {},
+      mongoUrl: 'mongodb://localhost:27017/storj-test',
+      mongoOpts: {},
     };
     var config = new LandlordConfig(opts);
     expect(config).to.be.instanceOf(LandlordConfig);
@@ -244,6 +248,8 @@ describe('Landlord Config', function() {
         logLevel: 3,
         amqpUrl: 'amqp://localhost',
         amqpOpts: {},
+        mongoUrl: 'mongodb://localhost:27017/storj-test',
+        mongoOpts: {},
         serverPort: 8080,
         serverOpts: {
           certificate: '/tmp/certificate.pem',
@@ -263,6 +269,8 @@ describe('Landlord Config', function() {
     var conf = complex.createConfig('/tmp/somepath.json');
     expect(conf._.serverOpts.certificate).to.equal('pem');
     expect(conf._.serverOpts.key).to.equal('pem');
+    expect(conf._.mongoUrl).to.equal('mongodb://localhost:27017/storj-test');
+    expect(conf._.mongoOpts).to.eql({});
   });
 
 });
