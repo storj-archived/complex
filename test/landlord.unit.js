@@ -1,6 +1,7 @@
 'use strict';
 
 var EventEmitter = require('events').EventEmitter;
+var proxyquire = require('proxyquire');
 var restify = require('restify');
 var expect = require('chai').expect;
 var rabbitmq = require('rabbit.js');
@@ -61,6 +62,8 @@ describe('Landlord', function() {
           logLevel: 3000,
           amqpUrl: 'amqp://localhost',
           amqpOpts: {},
+          mongoUrl: 'mongodb://localhost:27017/storj-test',
+          mongoOpts: {},
           serverPort: 8080,
           serverOpts: {
             certficate: null,
@@ -79,6 +82,31 @@ describe('Landlord', function() {
       expect(landlord._opts.logLevel).to.equal(3000);
     });
 
+  });
+
+  describe('#_initStorage', function() {
+    it('will instantiate storage', function() {
+      var options = {
+        mongoUrl: 'mongodb://localhost:37017/storj-test',
+        mongoOpts: {
+          hello: 'world'
+        }
+      };
+      var Storage = sinon.stub();
+      var TestLandlord = proxyquire('../lib/landlord', {
+        'storj-service-storage-models': Storage
+      });
+
+      var landlord = new TestLandlord(options);
+      landlord._initStorage();
+      expect(landlord.storage).to.be.instanceOf(Storage);
+      expect(Storage.args[0][0])
+        .to.equal('mongodb://localhost:37017/storj-test');
+      expect(Storage.args[0][1])
+        .to.deep.equal({ hello: 'world' });
+      expect(Storage.args[0][2].logger)
+        .to.be.instanceOf(require('kad-logger-json'));
+    });
   });
 
   describe('#_bindServerRoutes', function() {
@@ -116,7 +144,9 @@ describe('Landlord', function() {
       sandbox.stub(landlord, '_initMessageBus', function() {
         this.emit('ready');
       });
+      sandbox.stub(landlord, '_initStorage');
       landlord.start(function(err) {
+        expect(landlord._initStorage.callCount).to.equal(1);
         expect(landlord.server.listen.callCount).to.equal(1);
         expect(landlord.server.listen.args[0][0]).to.equal(3425);
         expect(err).to.equal(undefined);
@@ -132,6 +162,7 @@ describe('Landlord', function() {
       };
       var rabbit = new EventEmitter();
       sandbox.stub(rabbitmq, 'createContext').returns(rabbit);
+      sandbox.stub(landlord, '_initStorage');
       sandbox.stub(landlord, '_initMessageBus', function() {
         this.emit('error', new Error('test'));
       });
@@ -243,6 +274,81 @@ describe('Landlord', function() {
     });
   });
 
+  describe('#_recordRequestTimeout', function() {
+    const sandbox = sinon.sandbox.create();
+    afterEach(() => sandbox.restore());
+
+    it('will warn from contact lookup', function() {
+      const landlord = complex.createLandlord({});
+      const findOne = sinon.stub().callsArgWith(1, new Error('test'));
+      landlord.storage = {
+        models: {
+          Contact: {
+            findOne: findOne
+          }
+        }
+      };
+      sandbox.stub(landlord._logger, 'warn');
+      landlord._recordRequestTimeout('nodeid');
+      expect(findOne.callCount).to.equal(1);
+      expect(landlord._logger.warn.callCount).to.equal(1);
+    });
+
+    it('will warn if contact not found', function() {
+      const landlord = complex.createLandlord({});
+      const findOne = sinon.stub().callsArgWith(1, null, null);
+      landlord.storage = {
+        models: {
+          Contact: {
+            findOne: findOne
+          }
+        }
+      };
+      sandbox.stub(landlord._logger, 'warn');
+      landlord._recordRequestTimeout('nodeid');
+      expect(findOne.callCount).to.equal(1);
+      expect(landlord._logger.warn.callCount).to.equal(1);
+    });
+
+    it('will warn if unable to save contact', function() {
+      const landlord = complex.createLandlord({});
+      const contact = {
+        save: sinon.stub().callsArgWith(0, new Error('test'))
+      };
+      const findOne = sinon.stub().callsArgWith(1, null, contact);
+      landlord.storage = {
+        models: {
+          Contact: {
+            findOne: findOne
+          }
+        }
+      };
+      sandbox.stub(landlord._logger, 'warn');
+      landlord._recordRequestTimeout('nodeid');
+      expect(findOne.callCount).to.equal(1);
+      expect(landlord._logger.warn.callCount).to.equal(1);
+    });
+
+    it('will save contact with updated lastTimeout', function() {
+      const landlord = complex.createLandlord({});
+      const contact = {
+        save: sinon.stub().callsArgWith(0, null)
+      };
+      const findOne = sinon.stub().callsArgWith(1, null, contact);
+      landlord.storage = {
+        models: {
+          Contact: {
+            findOne: findOne
+          }
+        }
+      };
+      sandbox.stub(landlord._logger, 'warn');
+      landlord._recordRequestTimeout('nodeid');
+      expect(findOne.callCount).to.equal(1);
+      expect(landlord._logger.warn.callCount).to.equal(0);
+    });
+  });
+
   describe('#_setJsonRpcRequestTimeout', function() {
     it('will log method, id, data_hash and node_id', function(done) {
       var landlord = complex.createLandlord({ requestTimeout: 1 });
@@ -266,8 +372,10 @@ describe('Landlord', function() {
           method: 'getRetrievalPointer'
         }
       };
+      landlord._recordRequestTimeout = sinon.stub();
       landlord._setJsonRpcRequestTimeout(req);
       setTimeout(function() {
+        expect(landlord._recordRequestTimeout.callCount).to.equal(1);
         expect(landlord._logger.warn.callCount).to.equal(1);
         expect(landlord._logger.warn.args[0][0])
           .to.equal('job timed out, method: %s, id: %s, ' +
@@ -312,7 +420,7 @@ describe('Landlord', function() {
         done();
       }, 2);
     });
-    
+
     it('will send error after timeout ', function(done) {
       var landlord = complex.createLandlord({ requestTimeout: 1 });
       var send = sandbox.stub();
