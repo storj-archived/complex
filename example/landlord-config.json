@@ -1,6 +1,8 @@
 {
   "type": "Landlord",
   "opts": {
+    "mongoUrl": "mongodb://localhost:27017/__storj-complex-example",
+    "mongoOpts": {},
     "logLevel": 3,
     "amqpUrl": "amqp://localhost",
     "amqpOpts": {},
