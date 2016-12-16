@@ -331,6 +331,7 @@ describe('Landlord', function() {
       expect(findOne.callCount).to.equal(1);
       expect(landlord._logger.warn.callCount).to.equal(1);
       expect(contact.recordResponseTime.callCount).to.equal(1);
+      expect(contact.recordResponseTime.args[0][0]).to.equal(90000);
     });
 
     it('will save contact with updated lastTimeout', function() {
@@ -563,6 +564,155 @@ describe('Landlord', function() {
       var req = { id: 'someid', params: [], method: 'getRetrievalPointer' };
       expect(landlord._isValidJsonRpcRequest(req)).to.equal(true);
     });
+  });
+
+  describe('#_recordSuccessTime', function() {
+    const sandbox = sinon.sandbox.create();
+    afterEach(() => sandbox.restore());
+
+    it('it will log if responseTime is not finite', function() {
+      const landlord = complex.createLandlord({});
+      const job = {
+        req: {
+          body: {}
+        },
+        res: {},
+        start: '2016-12-16T22:36:00.916Z'
+      };
+      sandbox.stub(landlord._logger, 'warn');
+      landlord._recordSuccessTime(job);
+      expect(landlord._logger.warn.callCount).to.equal(1);
+    });
+
+    it('it will log error looking up contact', function() {
+      const landlord = complex.createLandlord({});
+      const job = {
+        req: {
+          body: {
+            method: 'getRetrievalPointer',
+            params: [
+              {
+                nodeID: 'nodeid'
+              }
+            ]
+          }
+        },
+        res: {},
+        start: 1481927872255
+      };
+      sandbox.stub(landlord._logger, 'warn');
+      landlord.storage = {
+        models: {
+          Contact: {
+            findOne: sandbox.stub().callsArgWith(1, new Error('test'))
+          }
+        }
+      };
+      landlord._recordSuccessTime(job);
+      expect(landlord._logger.warn.callCount).to.equal(1);
+    });
+
+    it('it will log error with unknown contact', function() {
+      const landlord = complex.createLandlord({});
+      const job = {
+        req: {
+          body: {
+            method: 'getRetrievalPointer',
+            params: [
+              {
+                nodeID: 'nodeid'
+              }
+            ]
+          }
+        },
+        res: {},
+        start: 1481927872255
+      };
+      sandbox.stub(landlord._logger, 'warn');
+      landlord.storage = {
+        models: {
+          Contact: {
+            findOne: sandbox.stub().callsArgWith(1, null, null)
+          }
+        }
+      };
+      landlord._recordSuccessTime(job);
+      expect(landlord._logger.warn.callCount).to.equal(1);
+    });
+
+    it('it will log error saving contact', function() {
+      const landlord = complex.createLandlord({});
+      const job = {
+        req: {
+          body: {
+            method: 'getRetrievalPointer',
+            params: [
+              {
+                nodeID: 'nodeid'
+              }
+            ]
+          }
+        },
+        res: {},
+        start: 1481927872255
+      };
+      sandbox.stub(landlord._logger, 'warn');
+      const contact = {
+        recordResponseTime: sandbox.stub().returns({
+          save: sandbox.stub().callsArgWith(0, new Error('test'))
+        })
+      };
+      landlord.storage = {
+        models: {
+          Contact: {
+            findOne: sandbox.stub().callsArgWith(1, null, contact)
+          }
+        }
+      };
+      landlord._recordSuccessTime(job);
+      expect(landlord._logger.warn.callCount).to.equal(1);
+    });
+
+    it('will record response time and save', function() {
+      const now = 1481927872255;
+      const clock = sandbox.useFakeTimers(now);
+      const landlord = complex.createLandlord({});
+      const job = {
+        req: {
+          body: {
+            method: 'getRetrievalPointer',
+            params: [
+              {
+                nodeID: 'nodeid'
+              }
+            ]
+          }
+        },
+        res: {},
+        start: now
+      };
+      sandbox.stub(landlord._logger, 'warn');
+      const save = sandbox.stub().callsArgWith(0, null);
+      const contact = {
+        recordResponseTime: sandbox.stub().returns({
+          save: save
+        })
+      };
+      landlord.storage = {
+        models: {
+          Contact: {
+            findOne: sandbox.stub().callsArgWith(1, null, contact)
+          }
+        }
+      };
+      clock.tick(510);
+      landlord._recordSuccessTime(job);
+      expect(contact.recordResponseTime.callCount).to.equal(1);
+      expect(contact.recordResponseTime.args[0][0]).to.equal(510);
+      expect(landlord._logger.warn.callCount).to.equal(0);
+      expect(save.callCount).to.equal(1);
+    });
+
   });
 
   describe('#_handleWorkResult', function() {
