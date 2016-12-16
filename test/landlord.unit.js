@@ -25,7 +25,7 @@ describe('Landlord', function() {
       expect(landlord.server);
       expect(landlord.server).to.be.instanceOf(require('restify/lib/server'));
       expect(landlord._logger).to.be.instanceOf(require('kad-logger-json'));
-      expect(landlord._pendingResponses).to.deep.equal({});
+      expect(landlord._pendingJobs).to.deep.equal({});
       expect(Landlord.prototype._bindServerRoutes.callCount).to.equal(1);
     }
 
@@ -354,8 +354,10 @@ describe('Landlord', function() {
       var landlord = complex.createLandlord({ requestTimeout: 1 });
       sandbox.stub();
       var send = sinon.stub();
-      landlord._pendingResponses.someid = {
-        send: send
+      landlord._pendingJobs.someid = {
+        res: {
+          send: send
+        }
       };
       sandbox.stub(landlord._logger, 'warn');
       var req = {
@@ -392,8 +394,10 @@ describe('Landlord', function() {
       var landlord = complex.createLandlord({ requestTimeout: 1 });
       sandbox.stub();
       var send = sinon.stub();
-      landlord._pendingResponses.someid = {
-        send: send
+      landlord._pendingJobs.someid = {
+        res: {
+          send: send
+        }
       };
       sandbox.stub(landlord._logger, 'warn');
       var req = {
@@ -424,8 +428,10 @@ describe('Landlord', function() {
     it('will send error after timeout ', function(done) {
       var landlord = complex.createLandlord({ requestTimeout: 1 });
       var send = sandbox.stub();
-      landlord._pendingResponses.someid = {
-        send: send
+      landlord._pendingJobs.someid = {
+        res: {
+          send: send
+        }
       };
       var req = {
         body: {
@@ -435,7 +441,7 @@ describe('Landlord', function() {
       landlord._setJsonRpcRequestTimeout(req);
       setTimeout(function() {
         expect(send.callCount).to.equal(1);
-        expect(landlord._pendingResponses.someid).to.equal(undefined);
+        expect(landlord._pendingJobs.someid).to.equal(undefined);
         done();
       }, 2);
     });
@@ -450,7 +456,7 @@ describe('Landlord', function() {
       landlord._setJsonRpcRequestTimeout(req);
       setTimeout(function() {
         expect(send.callCount).to.equal(0);
-        expect(landlord._pendingResponses.someid).to.equal(undefined);
+        expect(landlord._pendingJobs.someid).to.equal(undefined);
         done();
       }, 2);
     });
@@ -580,8 +586,10 @@ describe('Landlord', function() {
         debug: sandbox.stub()
       };
       var send = sandbox.stub();
-      landlord._pendingResponses.someid = {
-        send: send
+      landlord._pendingJobs.someid = {
+        res: {
+          send: send
+        }
       };
       landlord._handleWorkResult(buffer);
       expect(landlord._logger.warn.callCount).to.equal(1);
@@ -605,14 +613,16 @@ describe('Landlord', function() {
         debug: sandbox.stub()
       };
       var send = sandbox.stub();
-      landlord._pendingResponses.someid = {
-        send: send
+      landlord._pendingJobs.someid = {
+        res: {
+          send: send
+        }
       };
       landlord._handleWorkResult(buffer);
       expect(landlord._logger.info.callCount).to.equal(1);
       expect(landlord._logger.debug.callCount).to.equal(1);
       expect(send.callCount).to.equal(1);
-      expect(landlord._pendingResponses.someid).to.equal(undefined);
+      expect(landlord._pendingJobs.someid).to.equal(undefined);
       expect(send.callCount).to.equal(1);
       expect(send.args[0][0]).to.deep.equal({
         hello: 'world',
