@@ -1,5 +1,7 @@
 'use strict';
 
+/* jshint maxstatements: 20 */
+
 var EventEmitter = require('events').EventEmitter;
 var proxyquire = require('proxyquire');
 var restify = require('restify');
@@ -313,7 +315,8 @@ describe('Landlord', function() {
     it('will warn if unable to save contact', function() {
       const landlord = complex.createLandlord({});
       const contact = {
-        save: sinon.stub().callsArgWith(0, new Error('test'))
+        save: sinon.stub().callsArgWith(0, new Error('test')),
+        recordResponseTime: sinon.stub()
       };
       const findOne = sinon.stub().callsArgWith(1, null, contact);
       landlord.storage = {
@@ -327,12 +330,14 @@ describe('Landlord', function() {
       landlord._recordRequestTimeout('nodeid');
       expect(findOne.callCount).to.equal(1);
       expect(landlord._logger.warn.callCount).to.equal(1);
+      expect(contact.recordResponseTime.callCount).to.equal(1);
     });
 
     it('will save contact with updated lastTimeout', function() {
       const landlord = complex.createLandlord({});
       const contact = {
-        save: sinon.stub().callsArgWith(0, null)
+        save: sinon.stub().callsArgWith(0, null),
+        recordResponseTime: sinon.stub()
       };
       const findOne = sinon.stub().callsArgWith(1, null, contact);
       landlord.storage = {
@@ -346,6 +351,7 @@ describe('Landlord', function() {
       landlord._recordRequestTimeout('nodeid');
       expect(findOne.callCount).to.equal(1);
       expect(landlord._logger.warn.callCount).to.equal(0);
+      expect(contact.recordResponseTime.callCount).to.equal(1);
     });
   });
 
@@ -600,7 +606,7 @@ describe('Landlord', function() {
     });
 
     it('will send completed work and delete callback', function() {
-      var buffer = new Buffer(JSON.stringify({
+      const buffer = new Buffer(JSON.stringify({
         hello: 'world',
         id: 'someid',
         result: [
@@ -612,12 +618,14 @@ describe('Landlord', function() {
         info: sandbox.stub(),
         debug: sandbox.stub()
       };
-      var send = sandbox.stub();
-      landlord._pendingJobs.someid = {
+      const send = sandbox.stub();
+      landlord._recordSuccessTime = sandbox.stub();
+      const job = {
         res: {
           send: send
         }
       };
+      landlord._pendingJobs.someid = job;
       landlord._handleWorkResult(buffer);
       expect(landlord._logger.info.callCount).to.equal(1);
       expect(landlord._logger.debug.callCount).to.equal(1);
@@ -632,6 +640,8 @@ describe('Landlord', function() {
           'value1'
         ]
       });
+      expect(landlord._recordSuccessTime.callCount).to.equal(1);
+      expect(landlord._recordSuccessTime.args[0][0]).to.equal(job);
     });
   });
 
