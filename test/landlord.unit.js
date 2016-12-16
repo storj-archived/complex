@@ -584,6 +584,31 @@ describe('Landlord', function() {
       expect(landlord._logger.warn.callCount).to.equal(1);
     });
 
+    it('will not log or save for not relevant methods', function() {
+      const landlord = complex.createLandlord({});
+      const job = {
+        req: {
+          body: {
+            method: 'getStorageOffer'
+          }
+        },
+        res: {},
+        start: 1481927872255
+      };
+      const findOne = sandbox.stub().callsArgWith(1, null, null);
+      sandbox.stub(landlord._logger, 'warn');
+      landlord.storage = {
+        models: {
+          Contact: {
+            findOne: findOne
+          }
+        }
+      };
+      landlord._recordSuccessTime(job);
+      expect(landlord._logger.warn.callCount).to.equal(0);
+      expect(findOne.callCount).to.equal(0);
+    });
+
     it('it will log error looking up contact', function() {
       const landlord = complex.createLandlord({});
       const job = {
