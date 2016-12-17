@@ -41,7 +41,7 @@
     "secp256k1": "^3.2.2",
     "storj-lib": "^6.0.7",
     "storj-mongodb-adapter": "^5.0.0",
-    "storj-service-storage-models": "^6.0.1",
+    "storj-service-storage-models": "braydonf/storj-service-storage-models",
     "uuid": "^3.0.0"
   },
   "devDependencies": {

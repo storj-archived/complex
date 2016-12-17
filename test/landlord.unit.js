@@ -1,5 +1,7 @@
 'use strict';
 
+/* jshint maxstatements: 20 */
+
 var EventEmitter = require('events').EventEmitter;
 var proxyquire = require('proxyquire');
 var restify = require('restify');
@@ -25,7 +27,7 @@ describe('Landlord', function() {
       expect(landlord.server);
       expect(landlord.server).to.be.instanceOf(require('restify/lib/server'));
       expect(landlord._logger).to.be.instanceOf(require('kad-logger-json'));
-      expect(landlord._pendingResponses).to.deep.equal({});
+      expect(landlord._pendingJobs).to.deep.equal({});
       expect(Landlord.prototype._bindServerRoutes.callCount).to.equal(1);
     }
 
@@ -313,7 +315,8 @@ describe('Landlord', function() {
     it('will warn if unable to save contact', function() {
       const landlord = complex.createLandlord({});
       const contact = {
-        save: sinon.stub().callsArgWith(0, new Error('test'))
+        save: sinon.stub().callsArgWith(0, new Error('test')),
+        recordResponseTime: sinon.stub()
       };
       const findOne = sinon.stub().callsArgWith(1, null, contact);
       landlord.storage = {
@@ -327,12 +330,15 @@ describe('Landlord', function() {
       landlord._recordRequestTimeout('nodeid');
       expect(findOne.callCount).to.equal(1);
       expect(landlord._logger.warn.callCount).to.equal(1);
+      expect(contact.recordResponseTime.callCount).to.equal(1);
+      expect(contact.recordResponseTime.args[0][0]).to.equal(90000);
     });
 
     it('will save contact with updated lastTimeout', function() {
       const landlord = complex.createLandlord({});
       const contact = {
-        save: sinon.stub().callsArgWith(0, null)
+        save: sinon.stub().callsArgWith(0, null),
+        recordResponseTime: sinon.stub()
       };
       const findOne = sinon.stub().callsArgWith(1, null, contact);
       landlord.storage = {
@@ -346,6 +352,7 @@ describe('Landlord', function() {
       landlord._recordRequestTimeout('nodeid');
       expect(findOne.callCount).to.equal(1);
       expect(landlord._logger.warn.callCount).to.equal(0);
+      expect(contact.recordResponseTime.callCount).to.equal(1);
     });
   });
 
@@ -354,8 +361,10 @@ describe('Landlord', function() {
       var landlord = complex.createLandlord({ requestTimeout: 1 });
       sandbox.stub();
       var send = sinon.stub();
-      landlord._pendingResponses.someid = {
-        send: send
+      landlord._pendingJobs.someid = {
+        res: {
+          send: send
+        }
       };
       sandbox.stub(landlord._logger, 'warn');
       var req = {
@@ -392,8 +401,10 @@ describe('Landlord', function() {
       var landlord = complex.createLandlord({ requestTimeout: 1 });
       sandbox.stub();
       var send = sinon.stub();
-      landlord._pendingResponses.someid = {
-        send: send
+      landlord._pendingJobs.someid = {
+        res: {
+          send: send
+        }
       };
       sandbox.stub(landlord._logger, 'warn');
       var req = {
@@ -424,8 +435,10 @@ describe('Landlord', function() {
     it('will send error after timeout ', function(done) {
       var landlord = complex.createLandlord({ requestTimeout: 1 });
       var send = sandbox.stub();
-      landlord._pendingResponses.someid = {
-        send: send
+      landlord._pendingJobs.someid = {
+        res: {
+          send: send
+        }
       };
       var req = {
         body: {
@@ -435,7 +448,7 @@ describe('Landlord', function() {
       landlord._setJsonRpcRequestTimeout(req);
       setTimeout(function() {
         expect(send.callCount).to.equal(1);
-        expect(landlord._pendingResponses.someid).to.equal(undefined);
+        expect(landlord._pendingJobs.someid).to.equal(undefined);
         done();
       }, 2);
     });
@@ -450,7 +463,7 @@ describe('Landlord', function() {
       landlord._setJsonRpcRequestTimeout(req);
       setTimeout(function() {
         expect(send.callCount).to.equal(0);
-        expect(landlord._pendingResponses.someid).to.equal(undefined);
+        expect(landlord._pendingJobs.someid).to.equal(undefined);
         done();
       }, 2);
     });
@@ -553,6 +566,180 @@ describe('Landlord', function() {
     });
   });
 
+  describe('#_recordSuccessTime', function() {
+    const sandbox = sinon.sandbox.create();
+    afterEach(() => sandbox.restore());
+
+    it('it will log if responseTime is not finite', function() {
+      const landlord = complex.createLandlord({});
+      const job = {
+        req: {
+          body: {}
+        },
+        res: {},
+        start: '2016-12-16T22:36:00.916Z'
+      };
+      sandbox.stub(landlord._logger, 'warn');
+      landlord._recordSuccessTime(job);
+      expect(landlord._logger.warn.callCount).to.equal(1);
+    });
+
+    it('will not log or save for not relevant methods', function() {
+      const landlord = complex.createLandlord({});
+      const job = {
+        req: {
+          body: {
+            method: 'getStorageOffer'
+          }
+        },
+        res: {},
+        start: 1481927872255
+      };
+      const findOne = sandbox.stub().callsArgWith(1, null, null);
+      sandbox.stub(landlord._logger, 'warn');
+      landlord.storage = {
+        models: {
+          Contact: {
+            findOne: findOne
+          }
+        }
+      };
+      landlord._recordSuccessTime(job);
+      expect(landlord._logger.warn.callCount).to.equal(0);
+      expect(findOne.callCount).to.equal(0);
+    });
+
+    it('it will log error looking up contact', function() {
+      const landlord = complex.createLandlord({});
+      const job = {
+        req: {
+          body: {
+            method: 'getRetrievalPointer',
+            params: [
+              {
+                nodeID: 'nodeid'
+              }
+            ]
+          }
+        },
+        res: {},
+        start: 1481927872255
+      };
+      sandbox.stub(landlord._logger, 'warn');
+      landlord.storage = {
+        models: {
+          Contact: {
+            findOne: sandbox.stub().callsArgWith(1, new Error('test'))
+          }
+        }
+      };
+      landlord._recordSuccessTime(job);
+      expect(landlord._logger.warn.callCount).to.equal(1);
+    });
+
+    it('it will log error with unknown contact', function() {
+      const landlord = complex.createLandlord({});
+      const job = {
+        req: {
+          body: {
+            method: 'getRetrievalPointer',
+            params: [
+              {
+                nodeID: 'nodeid'
+              }
+            ]
+          }
+        },
+        res: {},
+        start: 1481927872255
+      };
+      sandbox.stub(landlord._logger, 'warn');
+      landlord.storage = {
+        models: {
+          Contact: {
+            findOne: sandbox.stub().callsArgWith(1, null, null)
+          }
+        }
+      };
+      landlord._recordSuccessTime(job);
+      expect(landlord._logger.warn.callCount).to.equal(1);
+    });
+
+    it('it will log error saving contact', function() {
+      const landlord = complex.createLandlord({});
+      const job = {
+        req: {
+          body: {
+            method: 'getRetrievalPointer',
+            params: [
+              {
+                nodeID: 'nodeid'
+              }
+            ]
+          }
+        },
+        res: {},
+        start: 1481927872255
+      };
+      sandbox.stub(landlord._logger, 'warn');
+      const contact = {
+        recordResponseTime: sandbox.stub().returns({
+          save: sandbox.stub().callsArgWith(0, new Error('test'))
+        })
+      };
+      landlord.storage = {
+        models: {
+          Contact: {
+            findOne: sandbox.stub().callsArgWith(1, null, contact)
+          }
+        }
+      };
+      landlord._recordSuccessTime(job);
+      expect(landlord._logger.warn.callCount).to.equal(1);
+    });
+
+    it('will record response time and save', function() {
+      const now = 1481927872255;
+      const clock = sandbox.useFakeTimers(now);
+      const landlord = complex.createLandlord({});
+      const job = {
+        req: {
+          body: {
+            method: 'getRetrievalPointer',
+            params: [
+              {
+                nodeID: 'nodeid'
+              }
+            ]
+          }
+        },
+        res: {},
+        start: now
+      };
+      sandbox.stub(landlord._logger, 'warn');
+      const save = sandbox.stub().callsArgWith(0, null);
+      const contact = {
+        recordResponseTime: sandbox.stub().returns({
+          save: save
+        })
+      };
+      landlord.storage = {
+        models: {
+          Contact: {
+            findOne: sandbox.stub().callsArgWith(1, null, contact)
+          }
+        }
+      };
+      clock.tick(510);
+      landlord._recordSuccessTime(job);
+      expect(contact.recordResponseTime.callCount).to.equal(1);
+      expect(contact.recordResponseTime.args[0][0]).to.equal(510);
+      expect(landlord._logger.warn.callCount).to.equal(0);
+      expect(save.callCount).to.equal(1);
+    });
+
+  });
+
   describe('#_handleWorkResult', function() {
     var landlord = complex.createLandlord({});
 
@@ -580,8 +767,10 @@ describe('Landlord', function() {
         debug: sandbox.stub()
       };
       var send = sandbox.stub();
-      landlord._pendingResponses.someid = {
-        send: send
+      landlord._pendingJobs.someid = {
+        res: {
+          send: send
+        }
       };
       landlord._handleWorkResult(buffer);
       expect(landlord._logger.warn.callCount).to.equal(1);
@@ -592,7 +781,7 @@ describe('Landlord', function() {
     });
 
     it('will send completed work and delete callback', function() {
-      var buffer = new Buffer(JSON.stringify({
+      const buffer = new Buffer(JSON.stringify({
         hello: 'world',
         id: 'someid',
         result: [
@@ -604,15 +793,19 @@ describe('Landlord', function() {
         info: sandbox.stub(),
         debug: sandbox.stub()
       };
-      var send = sandbox.stub();
-      landlord._pendingResponses.someid = {
-        send: send
+      const send = sandbox.stub();
+      landlord._recordSuccessTime = sandbox.stub();
+      const job = {
+        res: {
+          send: send
+        }
       };
+      landlord._pendingJobs.someid = job;
       landlord._handleWorkResult(buffer);
       expect(landlord._logger.info.callCount).to.equal(1);
       expect(landlord._logger.debug.callCount).to.equal(1);
       expect(send.callCount).to.equal(1);
-      expect(landlord._pendingResponses.someid).to.equal(undefined);
+      expect(landlord._pendingJobs.someid).to.equal(undefined);
       expect(send.callCount).to.equal(1);
       expect(send.args[0][0]).to.deep.equal({
         hello: 'world',
@@ -622,6 +815,8 @@ describe('Landlord', function() {
           'value1'
         ]
       });
+      expect(landlord._recordSuccessTime.callCount).to.equal(1);
+      expect(landlord._recordSuccessTime.args[0][0]).to.equal(job);
     });
   });
 
