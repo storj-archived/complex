@@ -80,6 +80,43 @@ client.getStorageOffer(contract, function(err, farmer, contract) {
 });
 ```
 
+### Generating an HD Key
+
+Here are the detailed steps for creating an HD key for configuration:
+
+```js
+// require necessary libs, get entropy, and create a key
+const HDKey = require('hdkey');
+const seed = require('crypto').randomBytes(64);
+const hdkey = HDKey.fromMasterSeed(seed);
+
+// to keep for other future uses
+console.log(hdkey.privateExtendedKey);
+
+// deriving the key for complex use (detailed in sip32)
+const complexKey = hdkey.derive("m/3000'/0'");
+
+// this will output expected private key used in configs
+console.log(complexKey.privateExtendedKey);
+
+// for this config value in complex
+let options = {};
+options.networkPrivateExtendedKey = complexKey.privateExtendedKey;
+
+// this is the key used in contracts and contacts
+console.log(complexKey.publicExtendedKey);
+```
+
+The above has been simplified into a utility, and can be used via:
+```js
+const {randomBytes} = require('crypto');
+const {createComplexKeyFromSeed} = require('storj-lib').utils;
+const complexKey = createComplexKeyFromSeed(randomBytes(64));
+```
+
+For more details see SIP32:
+- https://github.com/Storj/sips/blob/master/sip-0032.md
+
 License
 -------
 
