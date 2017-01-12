@@ -316,7 +316,8 @@ describe('Landlord', function() {
       const landlord = complex.createLandlord({});
       const contact = {
         save: sinon.stub().callsArgWith(0, new Error('test')),
-        recordResponseTime: sinon.stub()
+        recordResponseTime: sinon.stub(),
+        recordTimeoutFailure: sinon.stub()
       };
       const findOne = sinon.stub().callsArgWith(1, null, contact);
       landlord.storage = {
@@ -332,13 +333,15 @@ describe('Landlord', function() {
       expect(landlord._logger.warn.callCount).to.equal(1);
       expect(contact.recordResponseTime.callCount).to.equal(1);
       expect(contact.recordResponseTime.args[0][0]).to.equal(90000);
+      expect(contact.recordTimeoutFailure.callCount).to.equal(1);
     });
 
     it('will save contact with updated lastTimeout', function() {
       const landlord = complex.createLandlord({});
       const contact = {
         save: sinon.stub().callsArgWith(0, null),
-        recordResponseTime: sinon.stub()
+        recordResponseTime: sinon.stub(),
+        recordTimeoutFailure: sinon.stub()
       };
       const findOne = sinon.stub().callsArgWith(1, null, contact);
       landlord.storage = {
@@ -353,6 +356,7 @@ describe('Landlord', function() {
       expect(findOne.callCount).to.equal(1);
       expect(landlord._logger.warn.callCount).to.equal(0);
       expect(contact.recordResponseTime.callCount).to.equal(1);
+      expect(contact.recordTimeoutFailure.callCount).to.equal(1);
     });
   });
 
