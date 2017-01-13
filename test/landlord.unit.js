@@ -281,7 +281,9 @@ describe('Landlord', function() {
     afterEach(() => sandbox.restore());
 
     it('will warn from contact lookup', function() {
-      const landlord = complex.createLandlord({});
+      const landlord = complex.createLandlord({
+        timeoutRateThreshold: 0.4
+      });
       const findOne = sinon.stub().callsArgWith(1, new Error('test'));
       landlord.storage = {
         models: {
@@ -297,7 +299,9 @@ describe('Landlord', function() {
     });
 
     it('will warn if contact not found', function() {
-      const landlord = complex.createLandlord({});
+      const landlord = complex.createLandlord({
+        timeoutRateThreshold: 0.4
+      });
       const findOne = sinon.stub().callsArgWith(1, null, null);
       landlord.storage = {
         models: {
@@ -313,10 +317,13 @@ describe('Landlord', function() {
     });
 
     it('will warn if unable to save contact', function() {
-      const landlord = complex.createLandlord({});
+      const landlord = complex.createLandlord({
+        timeoutRateThreshold: 0.4
+      });
       const contact = {
         save: sinon.stub().callsArgWith(0, new Error('test')),
-        recordResponseTime: sinon.stub()
+        recordResponseTime: sinon.stub(),
+        recordTimeoutFailure: sinon.stub()
       };
       const findOne = sinon.stub().callsArgWith(1, null, contact);
       landlord.storage = {
@@ -332,13 +339,17 @@ describe('Landlord', function() {
       expect(landlord._logger.warn.callCount).to.equal(1);
       expect(contact.recordResponseTime.callCount).to.equal(1);
       expect(contact.recordResponseTime.args[0][0]).to.equal(90000);
+      expect(contact.recordTimeoutFailure.callCount).to.equal(1);
     });
 
     it('will save contact with updated lastTimeout', function() {
-      const landlord = complex.createLandlord({});
+      const landlord = complex.createLandlord({
+        timeoutRateThreshold: 0.4
+      });
       const contact = {
         save: sinon.stub().callsArgWith(0, null),
-        recordResponseTime: sinon.stub()
+        recordResponseTime: sinon.stub(),
+        recordTimeoutFailure: sinon.stub()
       };
       const findOne = sinon.stub().callsArgWith(1, null, contact);
       landlord.storage = {
@@ -353,6 +364,39 @@ describe('Landlord', function() {
       expect(findOne.callCount).to.equal(1);
       expect(landlord._logger.warn.callCount).to.equal(0);
       expect(contact.recordResponseTime.callCount).to.equal(1);
+      expect(contact.recordTimeoutFailure.callCount).to.equal(1);
+    });
+
+    it('will log warning if timeout rate exceeds threshold', function() {
+      const landlord = complex.createLandlord({
+        timeoutRateThreshold: 0.4
+      });
+      const contact = {
+        save: sinon.stub().callsArgWith(0, null),
+        recordResponseTime: sinon.stub(),
+        recordTimeoutFailure: sinon.stub(),
+        timeoutRate: 0.5,
+        nodeID: 'nodeid',
+      };
+      const findOne = sinon.stub().callsArgWith(1, null, contact);
+      landlord.storage = {
+        models: {
+          Contact: {
+            findOne: findOne
+          }
+        }
+      };
+      sandbox.stub(landlord._logger, 'warn');
+      landlord._recordRequestTimeout('nodeid');
+      expect(landlord._logger.warn.callCount).to.equal(1);
+      expect(landlord._logger.warn.args[0][0])
+        .to.equal('Shards need replication, farmer: %s, timeoutRate: %s');
+      expect(landlord._logger.warn.args[0][1])
+        .to.equal('nodeid');
+      expect(landlord._logger.warn.args[0][2])
+        .to.equal(0.5);
+      expect(contact.recordResponseTime.callCount).to.equal(1);
+      expect(contact.recordTimeoutFailure.callCount).to.equal(1);
     });
   });
 

@@ -531,4 +531,23 @@ describe('Client', function() {
     });
   });
 
+  describe('#ping', function() {
+    it('should call send with correct params', function(done) {
+      var client = complex.createClient();
+      client._send = sinon.stub().callsArg(2);
+      var farmer = storj.Contact({
+        address: '127.0.0.1',
+        port: 3030
+      });
+      client.ping(farmer, function() {
+        expect(client._send.callCount).to.equal(1);
+        expect(client._send.args[0][0]).to.equal('ping');
+        expect(client._send.args[0][1]).to.deep.equal([
+          farmer
+        ]);
+        done();
+      });
+    });
+  });
+
 });

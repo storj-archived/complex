@@ -590,6 +590,36 @@ describe('Renter', function() {
       expect(renter.workers.test.ack.callCount).to.equal(1);
     });
 
+    it('will handle ping command', function() {
+      var renter = complex.createRenter(options);
+      renter.workers = {
+        test: { ack: sinon.stub() }
+      };
+      var write = sinon.stub();
+      renter.notifier = {
+        write: write
+      };
+      var contact = {};
+      var buffer = new Buffer(JSON.stringify({
+        method: 'ping',
+        id: 'someid',
+        params: [contact]
+      }));
+      renter.network = {
+        ping: sinon.stub().callsArgWith(1, null, {})
+      };
+      renter._handleWork(renter.workers.test, buffer);
+      expect(write.callCount).to.equal(1);
+      expect(JSON.parse(write.args[0][0].toString())).to.deep.equal({
+        id: 'someid',
+        result: [
+          null,
+          {}
+        ]
+      });
+      expect(renter.workers.test.ack.callCount).to.equal(1);
+    });
+
     it('will serialize/deserialize args with redirected method', function() {
       var renter = complex.createRenter(options);
       var pointer = {
