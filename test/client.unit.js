@@ -326,7 +326,7 @@ describe('Client', function() {
       delete result[0].lastSeen;
       delete result[0].userAgent;
       expect(JSON.parse(JSON.stringify(result[0]))).to.deep.equal({
-        protocol: '1.0.0',
+        protocol: '1.1.0',
         address: '127.0.0.1',
         port: 3030,
         nodeID: 'a978efc9158dece8b6d34f605314b5dc8e003aaa',
@@ -372,7 +372,7 @@ describe('Client', function() {
       delete result[0].lastSeen;
       delete result[0].userAgent;
       expect(JSON.parse(JSON.stringify(result[0]))).to.deep.equal({
-        protocol: '1.0.0',
+        protocol: '1.1.0',
         address: '127.0.0.1',
         port: 3030,
         nodeID: 'a978efc9158dece8b6d34f605314b5dc8e003aaa'
