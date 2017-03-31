@@ -261,6 +261,38 @@ describe('Client', function() {
       ]);
     });
 
+    it('renewContract', function() {
+      var client = complex.createClient();
+      var method = 'renewContract';
+      var contract = new storj.Contract();
+      var farmer = storj.Contact({
+        address: '127.0.0.1',
+        port: 3030
+      });
+      var args = [contract, farmer];
+      var result = client._serializeRequestArguments(method, args);
+      expect(result).to.deep.equal([
+        {
+          audit_count: 10,
+          data_hash: null,
+          data_size: 1234,
+          farmer_id: null,
+          farmer_signature: null,
+          payment_destination: null,
+          payment_download_price: 0,
+          payment_storage_price: 0,
+          renter_hd_index: false,
+          renter_hd_key: false,
+          renter_id: null,
+          renter_signature: null,
+          store_begin: 2000000000,
+          store_end: 3000000000,
+          version: 0
+        },
+        farmer
+      ]);
+    });
+
     it('getStorageProof', function() {
       var client = complex.createClient();
       var method = 'getStorageProof';
@@ -529,6 +561,29 @@ describe('Client', function() {
         done();
       });
     });
+  });
+
+  describe('#renewContract', function() {
+
+    it('should call send with corrent params', function(done) {
+      var client = complex.createClient();
+      client._send = sinon.stub().callsArg(2);
+      var contract = storj.Contract({});
+      var farmer = storj.Contact({
+        address: '127.0.0.1',
+        port: 3030
+      });
+      client.renewContract(contract, farmer, function() {
+        expect(client._send.callCount).to.equal(1);
+        expect(client._send.args[0][0]).to.equal('renewContract');
+        expect(client._send.args[0][1]).to.deep.equal([
+          contract,
+          farmer
+        ]);
+        done();
+      });
+    });
+
   });
 
   describe('#ping', function() {
