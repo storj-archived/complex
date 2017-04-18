@@ -3,7 +3,6 @@
   "opts": {
     "mongoUrl": "{{ opts__mongoUrl }}",
     "mongoOpts": {
-      "ssl": {{ opts__mongoOpts__ssl }},
       "user": "{{ opts__mongoOpts__user }}",
       "pass": "{{ opts__mongoOpts__pass }}",
       "mongos": {
@@ -30,13 +29,11 @@
       "maxTunnels": {{ opts__networkOpts__maxTunnels }},
       "seedList": [
       ],
-      "bridgeUri": "{{ opts__networkOpts__bridgeUri",
+      "bridgeUri": "{{ opts__networkOpts__bridgeUri }}",
       "maxConnections": {{ opts__networkOpts__maxConnections }}
     },
     "totalRenters": {{ opts__totalRenters }},
     "renterOverlap": {{ opts__renterOverlap }},
-    "migrationPrivateKeyString": "{{ opts__migrationPrivateKeyString }}",
-    "networkPrivateExtendedKeyString": "{{ opts__networkPrivateExtendedKeyString }}",
     "networkIndex": {{ opts__networkIndex }}
   }
 }
