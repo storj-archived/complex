@@ -1,0 +1,42 @@
+{
+  "type": "Renter",
+  "opts": {
+    "mongoUrl": "{{ opts__mongoUrl }}",
+    "mongoOpts": {
+      "ssl": {{ opts__mongoOpts__ssl }},
+      "user": "{{ opts__mongoOpts__user }}",
+      "pass": "{{ opts__mongoOpts__pass }}",
+      "mongos": {
+        "checkServerIdentity": {{ opts__mongoOpts__mongos__checkServerIdentity }},
+        "ssl": {{ opts__mongoOpts__mongos__ssl }},
+        "sslValidate": {{ opts__mongoOpts__mongos__sslValidate }}
+      }
+    },
+    "logLevel": {{ opts__logLevel }},
+    "amqpUrl": "{{ opts__amqpUrl }}",
+    "amqpOpts": {
+    },
+    "migrationPrivateKey": "/etc/storj/keys/complexMigration.key",
+    "networkPrivateExtendedKey": "/etc/storj/keys/complex.key",
+    "networkOpts": {
+      "rpcPort": {{ opts__networkOpts__rpcPort }},
+      "rpcAddress": "{{ opts__networkOpts__rpcAddress }}",
+      "doNotTraverseNat": {{ opts__networkOpts__doNotTraverseNat }},
+      "tunnelServerPort": {{ opts__networkOpts__tunnelServerPort }},
+      "tunnelGatewayRange": {
+        "min": {{ opts__networkOpts__tunnelGatewayRange__min }},
+        "max": {{ opts__networkOpts__tunnelGatewayRange__max }}
+      },
+      "maxTunnels": {{ opts__networkOpts__maxTunnels }},
+      "seedList": [
+      ],
+      "bridgeUri": "{{ opts__networkOpts__bridgeUri",
+      "maxConnections": {{ opts__networkOpts__maxConnections }}
+    },
+    "totalRenters": {{ opts__totalRenters }},
+    "renterOverlap": {{ opts__renterOverlap }},
+    "migrationPrivateKeyString": "{{ opts__migrationPrivateKeyString }}",
+    "networkPrivateExtendedKeyString": "{{ opts__networkPrivateExtendedKeyString }}",
+    "networkIndex": {{ opts__networkIndex }}
+  }
+}
