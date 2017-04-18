@@ -19,13 +19,16 @@ node('node') {
 
       sh "git rev-parse --short HEAD > .git/commit-id"
       def commit_id = readFile('.git/commit-id').trim()
-      sh "./dockerfiles/build.sh storjlabs/complex:${env.BUILD_ID} storjlabs/complex:${commit_id} storjlabs/complex:latest"
-      sh "./dockerfiles/push.sh storjlabs/complex:${env.BUILD_ID} storjlabs/complex:${commit_id} storjlabs/complex:latest"
+      sh "./dockerfiles/build/build-landlord.sh ${env.BUILD_ID} ${commit_id} latest"
+      sh "./dockerfiles/build/build-renter.sh ${env.BUILD_ID} ${commit_id} latest"
+      sh "./dockerfiles/build/push.sh storjlabs/landlord:${env.BUILD_ID} storjlabs/landlord:${commit_id} storjlabs/landlord:latest"
+      sh "./dockerfiles/build/push.sh storjlabs/renter:${env.BUILD_ID} storjlabs/renter:${commit_id} storjlabs/renter:latest"
 
     stage 'Deploy'
 
       echo 'Push to Repo'
-      sh "./dockerfiles/deploy.staging.sh complex storjlabs/complex:${env.BUILD_ID}"
+      sh "./dockerfiles/deploy/deploy.staging.sh bridge-landlord storjlabs/landlord:${env.BUILD_ID}"
+      sh "./dockerfiles/deploy/deploy.staging.sh bridge-renter storjlabs/renter:${env.BUILD_ID}"
 
     stage 'Cleanup'
 
