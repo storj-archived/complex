@@ -1,0 +1,29 @@
+{
+  "type": "Landlord",
+  "opts": {
+    "logLevel": {{ opts__logLevel }},
+    "amqpUrl": "{{ opts__amqpUrl }}",
+    "amqpOpts": {
+    },
+    "serverPort": {{ opts__serverPort }},
+    "serverOpts": {
+      "certificate": null,
+      "key": null,
+      "authorization": {
+        "username": "{{ opts__serverOpts__authorization__username }}",
+        "password": "{{ opts__serverOpts__authorization__password }}"
+      }
+    },
+    "mongoOpts": {
+      "mongos": {
+        "checkServerIdentity": {{ opts__mongoOpts__mongos__checkServerIdentity }},
+        "ssl": {{ opts__mongoOpts__mongos__ssl }},
+        "sslValidate": {{ opts__mongoOpts__mongos__sslValidate }}
+      },
+      "user": "{{ opts__mongoOpts__user }}",
+      "pass": "{{ opts__mongoOpts__pass }}"
+    },
+    "mongoUrl": "{{ opts__mongoUrl }}"
+  }
+}
+
