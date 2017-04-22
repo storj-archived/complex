@@ -818,7 +818,7 @@ describe('Landlord', function() {
       };
       landlord._handleWorkResult(buffer);
       expect(landlord._logger.warn.callCount).to.equal(1);
-      expect(landlord._logger.debug.callCount).to.equal(1);
+      expect(landlord._pendingJobs.someid).to.equal(undefined);
       expect(send.callCount).to.equal(1);
       expect(send.args[0][0]).to.be.instanceOf(Error);
       expect(send.args[0][0].message).to.equal('rabbits are afk');
@@ -846,7 +846,6 @@ describe('Landlord', function() {
       };
       landlord._pendingJobs.someid = job;
       landlord._handleWorkResult(buffer);
-      expect(landlord._logger.info.callCount).to.equal(1);
       expect(landlord._logger.debug.callCount).to.equal(1);
       expect(send.callCount).to.equal(1);
       expect(landlord._pendingJobs.someid).to.equal(undefined);
