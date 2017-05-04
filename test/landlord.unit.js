@@ -54,7 +54,7 @@ describe('Landlord', function() {
 
     it('will set the default request timeout', function() {
       var landlord = complex.createLandlord({});
-      expect(landlord._requestTimeout).to.equal(90000);
+      expect(landlord._requestTimeout).to.equal(30000);
     });
 
     it('will convert config instance to object', function() {
@@ -338,7 +338,7 @@ describe('Landlord', function() {
       expect(findOne.callCount).to.equal(1);
       expect(landlord._logger.warn.callCount).to.equal(1);
       expect(contact.recordResponseTime.callCount).to.equal(1);
-      expect(contact.recordResponseTime.args[0][0]).to.equal(90000);
+      expect(contact.recordResponseTime.args[0][0]).to.equal(30000);
       expect(contact.recordTimeoutFailure.callCount).to.equal(1);
     });
 
