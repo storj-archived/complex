@@ -577,6 +577,13 @@ describe('Landlord', function() {
       })).to.equal('datahash');
     });
 
+    it('should use the hash of pointer', function() {
+      expect(Landlord.prototype._getKeyFromRpcMessage({
+        method: 'getMirrorNodes',
+        params: [{ hash: 'datahash' }]
+      })).to.equal('datahash');
+    });
+
     it('should be random', function() {
       expect(Landlord.prototype._getKeyFromRpcMessage({
         method: 'someUnknownMethod',
