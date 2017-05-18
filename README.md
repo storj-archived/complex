@@ -6,7 +6,7 @@
 [![NPM](https://img.shields.io/npm/v/storj-complex.svg?style=flat-square)](https://www.npmjs.com/package/storj-complex)
 [![License](https://img.shields.io/badge/license-AGPL3.0-blue.svg?style=flat-square)](https://raw.githubusercontent.com/Storj/complex/master/LICENSE)
 
-Manage many renter nodes with the same identity with remote control 
+Manage many renter nodes with the same identity with remote control
 capabilities! [Complete documentation can be found here](https://storj.github.io/complex/).
 
 Prerequisites
@@ -37,7 +37,7 @@ Usage
 ### Command Line Interface
 
 ```
-storj-complex <path/to/config.json>
+storj-complex -c <path/to/config.json>
 ```
 
 ### Programmatic
@@ -120,8 +120,8 @@ For more details see SIP32:
 License
 -------
 
-Storj Complex - Manage many renter nodes with remote control capabilities  
-Copyright (C) 2016 Storj Labs, Inc 
+Storj Complex - Manage many renter nodes with remote control capabilities
+Copyright (C) 2016 Storj Labs, Inc
 
 This program is free software: you can redistribute it and/or modify
 it under the terms of the GNU Affero General Public License as published
