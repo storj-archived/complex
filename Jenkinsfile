@@ -28,7 +28,7 @@ node('node') {
 
       echo 'Push to Repo'
       sh "./dockerfiles/deploy/deploy.staging.sh bridge-landlord deployment storjlabs/landlord:${commit_id}"
-      sh "./dockerfiles/deploy/deploy.staging.sh bridge-renter statefulset  storjlabs/renter:${commit_id}"
+      sh "./dockerfiles/deploy/deploy.staging.sh renter statefulset  storjlabs/renter:${commit_id}"
 
     stage 'Cleanup'
 
