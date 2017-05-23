@@ -580,7 +580,7 @@ describe('Landlord', function() {
     it('should use the hash of pointer', function() {
       expect(Landlord.prototype._getKeyFromRpcMessage({
         method: 'getMirrorNodes',
-        params: [{ hash: 'datahash' }]
+        params: [[{ hash: 'datahash' }]]
       })).to.equal('datahash');
     });
 
