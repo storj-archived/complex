@@ -62,7 +62,7 @@ describe('Client', function() {
             method: 'getConnectedContacts',
             params: {}
           },
-          timeout: 30000
+          timeout: 90000
         });
         expect(result).to.deep.equal(['contact']);
         done();
