@@ -11,7 +11,8 @@ echo ${migration_private_key_string} > /etc/storj/keys/complexMigration.key
 HOSTNAME=$(hostname)
 regex="renter-([0-9]*)"
 if [[ $HOSTNAME =~ $regex ]]; then
-  NETWORK_INDEX="${BASH_REMATCH[1]}"
+  HOST_NUMBER=${BASH_REMATCH[1]}
+  NETWORK_INDEX=$((HOST_NUMBER+1))
   echo "Found network index '${NETWORK_INDEX}' from hostname"
 else
   NETWORK_INDEX=${RANDOM}
