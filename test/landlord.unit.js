@@ -541,7 +541,12 @@ describe('Landlord', function() {
         body: {
           id: 'someid',
           method: 'getConsignmentPointer',
-          params: [{ nodeID: '4b783710baab517de2e3de5bae7e749c9d0e5170' }]
+          params: [{
+            nodeID: '4b783710baab517de2e3de5bae7e749c9d0e5170',
+            data_hash: 'data_hash'
+          }, {
+            data_hash: 'data_hash'
+          }]
         }
       };
       var res = {};
