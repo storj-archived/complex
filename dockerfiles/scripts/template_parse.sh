@@ -31,12 +31,12 @@ for ENV_ENTRY in $(env); do
     ENV_VAL="${!ENV_KEY}"
 
     echo "ENV_KEY is: ${ENV_KEY}"
-    echo "SUB_KEY is: ${ENV_SUB_KEY} and ENV_VAL is: ${ENV_VAL}"
+    #echo "SUB_KEY is: ${ENV_SUB_KEY} and ENV_VAL is: ${ENV_VAL}"
 
     # Sanatize the replacement value for sed
     SAN_ENV_VAL=$(echo $ENV_VAL | sed -e 's/[\/&]/\\&/g')
 
-    echo "SAN_ENV_VAL is: ${SAN_ENV_VAL}"
+    #echo "SAN_ENV_VAL is: ${SAN_ENV_VAL}"
 
     # Replace all instances of the subkey with the value
     sed -i "s/{{ ${ENV_SUB_KEY} }}/${SAN_ENV_VAL}/g" ${TEMPLATE_OUT_FILE}
