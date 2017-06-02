@@ -183,6 +183,52 @@ describe('Renter', function() {
       expect(renter._logger.warn.callCount).to.equal(1);
       done();
     });
+
+    it('will listen for unhandled offers and queue as mirrors', function(done) {
+      var options = {
+        networkPrivateExtendedKey: hdKey.privateExtendedKey,
+        networkIndex: 10,
+        networkOpts: {
+          rpcPort: 8001,
+          rpcAddress: '127.0.0.1',
+          doNotTraverseNat: true,
+          maxTunnels: 10,
+          tunnelGatewayRange: {},
+          bridgeUri: 'http://localhost',
+          seedList: [
+            'storj://127.0.0.1:3000/955af05f3130ac5c70952a34a9aa710c9fbf812b'
+          ],
+          maxConnections: 10
+        },
+      };
+      var StorageManager = function() {};
+      util.inherits(StorageManager, storj.StorageManager);
+      sandbox.stub(storj, 'StorageManager', StorageManager);
+      var Renter = proxyquire('../lib/renter', {
+        'storj-mongodb-adapter': function() {}
+      });
+      var renter = new Renter(options);
+      var _storeAsQueuedMirror = sandbox.stub(
+        renter,
+        '_storeAsQueuedMirror'
+      ).callsArg(1);
+      var seeds = [
+        'storj://127.0.0.1:3000/955af05f3130ac5c70952a34a9aa710c9fbf812b'
+      ];
+      renter._initNetwork(seeds);
+      setImmediate(() => {
+        var offer = { contract: {}, contact: {} };
+        renter.network.emit(
+          'unhandledOffer',
+          offer.contact,
+          offer.contract,
+          function() {
+            expect(_storeAsQueuedMirror.calledWithMatch(offer)).to.equal(true);
+            done();
+          }
+        );
+      });
+    });
   });
 
   describe('#start', function() {
