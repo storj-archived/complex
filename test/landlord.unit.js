@@ -148,6 +148,7 @@ describe('Landlord', function() {
       });
       sandbox.stub(landlord, '_initStorage');
       landlord.start(function(err) {
+        expect(landlord._initMessageBus.callCount).to.equal(1);
         expect(landlord._initStorage.callCount).to.equal(1);
         expect(landlord.server.listen.callCount).to.equal(1);
         expect(landlord.server.listen.args[0][0]).to.equal(3425);

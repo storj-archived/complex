@@ -218,6 +218,7 @@ describe('Renter', function() {
       ];
       renter._loadKnownSeeds = sinon.stub().callsArgWith(0, null, seeds);
       renter.start(function(err) {
+        expect(renter._initMessageBus.callCount).to.equal(1);
         expect(err).to.be.equal(undefined);
         done();
       });
