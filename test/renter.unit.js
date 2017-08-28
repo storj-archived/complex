@@ -183,6 +183,52 @@ describe('Renter', function() {
       expect(renter._logger.warn.callCount).to.equal(1);
       done();
     });
+
+    it('will listen for unhandled offers and queue as mirrors', function(done) {
+      var options = {
+        networkPrivateExtendedKey: hdKey.privateExtendedKey,
+        networkIndex: 10,
+        networkOpts: {
+          rpcPort: 8001,
+          rpcAddress: '127.0.0.1',
+          doNotTraverseNat: true,
+          maxTunnels: 10,
+          tunnelGatewayRange: {},
+          bridgeUri: 'http://localhost',
+          seedList: [
+            'storj://127.0.0.1:3000/955af05f3130ac5c70952a34a9aa710c9fbf812b'
+          ],
+          maxConnections: 10
+        },
+      };
+      var StorageManager = function() {};
+      util.inherits(StorageManager, storj.StorageManager);
+      sandbox.stub(storj, 'StorageManager', StorageManager);
+      var Renter = proxyquire('../lib/renter', {
+        'storj-mongodb-adapter': function() {}
+      });
+      var renter = new Renter(options);
+      var _storeAsQueuedMirror = sandbox.stub(
+        renter,
+        '_storeAsQueuedMirror'
+      ).callsArg(1);
+      var seeds = [
+        'storj://127.0.0.1:3000/955af05f3130ac5c70952a34a9aa710c9fbf812b'
+      ];
+      renter._initNetwork(seeds);
+      setImmediate(() => {
+        var offer = { contract: {}, contact: {} };
+        renter.network.emit(
+          'unhandledOffer',
+          offer.contact,
+          offer.contract,
+          function() {
+            expect(_storeAsQueuedMirror.calledWithMatch(offer)).to.equal(true);
+            done();
+          }
+        );
+      });
+    });
   });
 
   describe('#start', function() {
@@ -1381,9 +1427,20 @@ describe('Renter', function() {
       networkPrivateExtendedKey: hdKey.privateExtendedKey,
       networkIndex: 10
     };
+    var mirrorStream = null;
+    var models = {
+      Mirror: sandbox.stub().returns({
+        cursor: () => {
+          mirrorStream = new EventEmitter();
+          mirrorStream.close = sandbox.stub();
+          return mirrorStream;
+        }
+      })
+    };
 
     it('will handle error from stream', function(done) {
       var renter = complex.createRenter(options);
+      renter.models = models;
       renter._logger = {
         error: sinon.stub()
       };
@@ -1404,6 +1461,7 @@ describe('Renter', function() {
 
     it('will handle offer stream end', function(done) {
       var renter = complex.createRenter(options);
+      renter.models = models;
       renter._logger = {
         info: sinon.stub()
       };
@@ -1422,8 +1480,46 @@ describe('Renter', function() {
       done();
     });
 
+    it('will handle first data event from mirrors', function(done) {
+      var renter = complex.createRenter(options);
+      renter.models = models;
+      renter._logger = {
+        info: sinon.stub()
+      };
+      var contact = {};
+      var contractData = {};
+      var contract = new storj.Contract(contractData);
+      var blacklist = [];
+      var offerStream = new ReadableStream();
+      var item = {
+        addContract: sinon.stub()
+      };
+      renter.network = {
+        getOfferStream: sinon.stub().returns(offerStream),
+        storageManager: {
+          load: sinon.stub().callsArgWith(1, null, item),
+          save: sinon.stub().callsArg(1)
+        }
+      };
+      renter._signStorageContract = sinon.stub();
+      renter._getStorageOffers(contract, blacklist, function(err,
+                                                             contact2,
+                                                             contract2) {
+        expect(contact2).to.equal(contact);
+        expect(storj.Contract.compare(contract, contract2)).to.equal(true);
+        expect(mirrorStream.close.called).to.equal(true);
+        done();
+      });
+      var offer = {
+        contact: contact,
+        contract: contractData
+      };
+      mirrorStream.emit('data', offer);
+    });
+
     it('will handle first data event from stream', function(done) {
       var renter = complex.createRenter(options);
+      renter.models = models;
       renter._logger = {
         info: sinon.stub()
       };
@@ -1460,6 +1556,7 @@ describe('Renter', function() {
 
     it('will handle error from storage load', function(done) {
       var renter = complex.createRenter(options);
+      renter.models = models;
       renter._logger = {
         info: sinon.stub()
       };
@@ -1497,6 +1594,7 @@ describe('Renter', function() {
 
     it('will handle error from storage save', function(done) {
       var renter = complex.createRenter(options);
+      renter.models = models;
       renter._logger = {
         info: sinon.stub()
       };
@@ -1532,6 +1630,7 @@ describe('Renter', function() {
     it('should save additional data as mirror offers', function(done) {
       /* jshint maxstatements: 50 */
       var renter = complex.createRenter(options);
+      renter.models = models;
       renter._logger = {
         info: sinon.stub()
       };
@@ -1612,6 +1711,7 @@ describe('Renter', function() {
     it('will handle error from storing mirrors', function(done) {
       /* jshint maxstatements: 50 */
       var renter = complex.createRenter(options);
+      renter.models = models;
       renter._logger = {
         info: sinon.stub(),
         warn: sinon.stub()
