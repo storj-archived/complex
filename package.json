@@ -1,6 +1,6 @@
 {
   "name": "storj-complex",
-  "version": "5.6.0",
+  "version": "6.0.0",
   "description": "manage many storj renter nodes with remote control capabilities",
   "main": "index.js",
   "bin": {
@@ -41,9 +41,9 @@
     "request": "^2.75.0",
     "restify": "^4.1.1",
     "secp256k1": "^3.2.2",
-    "storj-lib": "^6.5.0",
-    "storj-mongodb-adapter": "^7.0.0",
-    "storj-service-storage-models": "^8.22.0",
+    "storj-lib": "^7.0.0",
+    "storj-mongodb-adapter": "^8.0.0",
+    "storj-service-storage-models": "^9.0.0",
     "uuid": "^3.0.0"
   },
   "devDependencies": {

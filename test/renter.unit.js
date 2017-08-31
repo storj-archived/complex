@@ -670,7 +670,7 @@ describe('Renter', function() {
               address: '127.0.0.1',
               nodeID: '955af05f3130ac5c70952a34a9aa710c9fbf812b',
               port: 3000,
-              protocol: '1.1.0'
+              protocol: '1.2.0'
             },
             hash: 'fad8d3a30b5d40dae9e61f7f84bf9017e9f4bb2f',
             operation: 'PULL',
