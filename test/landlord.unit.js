@@ -324,7 +324,8 @@ describe('Landlord', function() {
       const contact = {
         save: sinon.stub().callsArgWith(0, new Error('test')),
         recordResponseTime: sinon.stub(),
-        recordTimeoutFailure: sinon.stub()
+        recordTimeoutFailure: sinon.stub(),
+        recordPoints: sandbox.stub()
       };
       const findOne = sinon.stub().callsArgWith(1, null, contact);
       landlord.storage = {
@@ -350,7 +351,8 @@ describe('Landlord', function() {
       const contact = {
         save: sinon.stub().callsArgWith(0, null),
         recordResponseTime: sinon.stub(),
-        recordTimeoutFailure: sinon.stub()
+        recordTimeoutFailure: sinon.stub(),
+        recordPoints: sandbox.stub()
       };
       const findOne = sinon.stub().callsArgWith(1, null, contact);
       landlord.storage = {
@@ -378,6 +380,7 @@ describe('Landlord', function() {
         recordTimeoutFailure: sinon.stub(),
         timeoutRate: 0.5,
         nodeID: 'nodeid',
+        recordPoints: sandbox.stub()
       };
       const findOne = sinon.stub().callsArgWith(1, null, contact);
       landlord.storage = {
@@ -742,7 +745,8 @@ describe('Landlord', function() {
       const contact = {
         recordResponseTime: sandbox.stub().returns({
           save: sandbox.stub().callsArgWith(0, new Error('test'))
-        })
+        }),
+        recordPoints: sandbox.stub()
       };
       landlord.storage = {
         models: {
@@ -778,7 +782,8 @@ describe('Landlord', function() {
       const contact = {
         recordResponseTime: sandbox.stub().returns({
           save: save
-        })
+        }),
+        recordPoints: sandbox.stub()
       };
       landlord.storage = {
         models: {
@@ -789,6 +794,7 @@ describe('Landlord', function() {
       };
       clock.tick(510);
       landlord._recordSuccessTime(job);
+      expect(contact.recordPoints.callCount).to.equal(1);
       expect(contact.recordResponseTime.callCount).to.equal(1);
       expect(contact.recordResponseTime.args[0][0]).to.equal(510);
       expect(landlord._logger.warn.callCount).to.equal(0);
