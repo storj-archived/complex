@@ -269,9 +269,10 @@ describe('Client', function() {
         address: '127.0.0.1',
         port: 3030
       });
-      var args = [contract, farmer];
+      var args = [farmer, contract];
       var result = client._serializeRequestArguments(method, args);
       expect(result).to.deep.equal([
+        farmer,
         {
           audit_count: 10,
           data_hash: null,
@@ -288,8 +289,7 @@ describe('Client', function() {
           store_begin: 2000000000,
           store_end: 3000000000,
           version: 0
-        },
-        farmer
+        }
       ]);
     });
 
@@ -573,12 +573,12 @@ describe('Client', function() {
         address: '127.0.0.1',
         port: 3030
       });
-      client.renewContract(contract, farmer, function() {
+      client.renewContract(farmer, contract, function() {
         expect(client._send.callCount).to.equal(1);
         expect(client._send.args[0][0]).to.equal('renewContract');
         expect(client._send.args[0][1]).to.deep.equal([
-          contract,
-          farmer
+          farmer,
+          contract
         ]);
         done();
       });
