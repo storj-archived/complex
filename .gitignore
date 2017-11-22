@@ -41,3 +41,11 @@ jsdoc
 # Ignore browser build, but leave the directory
 dist/**
 !dist/.gitkeep
+
+# Ignore jetbrains .idea directory
+.idea/*
+
+# Ignore vim dotfiles
+*.swp
+*.swo
+*.swn
