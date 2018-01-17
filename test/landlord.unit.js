@@ -572,21 +572,56 @@ describe('Landlord', function() {
 
   describe('#_getKeyFromRpcMessage', function() {
 
-    it('should use the nodeID of farmer', function() {
+    it('getConsignmentPointer should use the nodeID of farmer', function() {
+      expect(Landlord.prototype._getKeyFromRpcMessage({
+        method: 'getConsignmentPointer',
+        params: [{ nodeID: 'nodeid' }]
+      })).to.equal('nodeid');
+    });
+
+    it('getRetrievalPointer should use the nodeID of farmer', function() {
+      expect(Landlord.prototype._getKeyFromRpcMessage({
+        method: 'getRetrievalPointer',
+        params: [{ nodeID: 'nodeid' }]
+      })).to.equal('nodeid');
+    });
+
+    it('renewContract should use the nodeID of farmer', function() {
+      expect(Landlord.prototype._getKeyFromRpcMessage({
+        method: 'renewContract',
+        params: [{ nodeID: 'nodeid' }]
+      })).to.equal('nodeid');
+    });
+
+    it('publishContract should use the nodeID of farmer', function() {
+      expect(Landlord.prototype._getKeyFromRpcMessage({
+        method: 'publishContract',
+        params: [[{ nodeID: 'nodeid1' }, { nodeID: 'nodeid2' }]]
+      })).to.equal('nodeid1');
+    });
+
+    it('getStorageProof should use the nodeID of farmer', function() {
       expect(Landlord.prototype._getKeyFromRpcMessage({
         method: 'getStorageProof',
         params: [{ nodeID: 'nodeid' }]
       })).to.equal('nodeid');
     });
 
-    it('should use the data hash of contract', function() {
+    it('ping should use the nodeID of farmer', function() {
+      expect(Landlord.prototype._getKeyFromRpcMessage({
+        method: 'ping',
+        params: [{ nodeID: 'nodeid' }]
+      })).to.equal('nodeid');
+    });
+
+    it('getStorageOffer should use the data hash of contract', function() {
       expect(Landlord.prototype._getKeyFromRpcMessage({
         method: 'getStorageOffer',
         params: [{ data_hash: 'datahash' }]
       })).to.equal('datahash');
     });
 
-    it('should use the hash of pointer', function() {
+    it('getMirrorNodes should use the hash of pointer', function() {
       expect(Landlord.prototype._getKeyFromRpcMessage({
         method: 'getMirrorNodes',
         params: [[{ hash: 'datahash' }]]
