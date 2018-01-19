@@ -596,7 +596,7 @@ describe('Landlord', function() {
     it('publishContract should use the nodeID of farmer', function() {
       expect(Landlord.prototype._getKeyFromRpcMessage({
         method: 'publishContract',
-        params: [[{ nodeID: 'nodeid1' }, { nodeID: 'nodeid2' }]]
+        params: [[{ _id: 'nodeid1' }, { _id: 'nodeid2' }]]
       })).to.equal('nodeid1');
     });
 
@@ -624,8 +624,8 @@ describe('Landlord', function() {
     it('getMirrorNodes should use the hash of pointer', function() {
       expect(Landlord.prototype._getKeyFromRpcMessage({
         method: 'getMirrorNodes',
-        params: [[{ hash: 'datahash' }]]
-      })).to.equal('datahash');
+        params: [[{ hash: 'datahash' }], [{ nodeID: 'nodeid' }]]
+      })).to.equal('nodeid');
     });
 
     it('should be random', function() {
