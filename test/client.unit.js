@@ -293,6 +293,38 @@ describe('Client', function() {
       ]);
     });
 
+    it('publishContract', function() {
+      var client = complex.createClient();
+      var method = 'publishContract';
+      var contract = new storj.Contract();
+      var farmer = storj.Contact({
+        address: '127.0.0.1',
+        port: 3030
+      });
+      var args = [farmer, contract];
+      var result = client._serializeRequestArguments(method, args);
+      expect(result).to.deep.equal([
+        farmer,
+        {
+          audit_count: 10,
+          data_hash: null,
+          data_size: 1234,
+          farmer_id: null,
+          farmer_signature: null,
+          payment_destination: null,
+          payment_download_price: 0,
+          payment_storage_price: 0,
+          renter_hd_index: false,
+          renter_hd_key: false,
+          renter_id: null,
+          renter_signature: null,
+          store_begin: 2000000000,
+          store_end: 3000000000,
+          version: 0
+        }
+      ]);
+    });
+
     it('getStorageProof', function() {
       var client = complex.createClient();
       var method = 'getStorageProof';
@@ -431,8 +463,29 @@ describe('Client', function() {
     it('getMirrorNodes', function() {
       var client = complex.createClient();
       var method = 'getMirrorNodes';
-      var args = [];
-      client._serializeRequestArguments(method, args);
+      var farmer = new storj.Contact({
+        address: '127.0.0.1',
+        port: 3030
+      });
+      var args = [
+        farmer
+      ];
+      var result = client._serializeRequestArguments(method, args);
+      expect(result).to.equal(args);
+    });
+
+    it('ping', function() {
+      var client = complex.createClient();
+      var method = 'ping';
+      var farmer = new storj.Contact({
+        address: '127.0.0.1',
+        port: 3030
+      });
+      var args = [
+        farmer
+      ];
+      var result = client._serializeRequestArguments(method, args);
+      expect(result).to.equal(args);
     });
   });
 
@@ -578,6 +631,33 @@ describe('Client', function() {
         expect(client._send.args[0][0]).to.equal('renewContract');
         expect(client._send.args[0][1]).to.deep.equal([
           farmer,
+          contract
+        ]);
+        done();
+      });
+    });
+
+  });
+
+  describe('#publishContract', function() {
+
+    it('should call send with corrent params', function(done) {
+      var client = complex.createClient();
+      client._send = sinon.stub().callsArg(2);
+      var contract = storj.Contract({});
+      var farmer1 = storj.Contact({
+        address: '127.0.0.1',
+        port: 3030
+      });
+      var farmer2 = storj.Contact({
+        address: '127.0.0.1',
+        port: 3030
+      });
+      client.publishContract([farmer1, farmer2], contract, function() {
+        expect(client._send.callCount).to.equal(1);
+        expect(client._send.args[0][0]).to.equal('publishContract');
+        expect(client._send.args[0][1]).to.deep.equal([
+          [farmer1, farmer2],
           contract
         ]);
         done();
