@@ -1296,6 +1296,17 @@ describe('Renter', function() {
       networkIndex: 10,
       migrationPrivateKey: key
     };
+    it('return true if contracts are the same', function() {
+      var renter = complex.createRenter(options);
+      var before = new storj.Contract();
+      var key = new storj.KeyPair();
+      var id = key.getNodeID();
+      before.set('farmer_id', id);
+      var after = new storj.Contract(before.toObject());
+      after.set('farmer_id', id);
+      after.sign('farmer', key.getPrivateKey());
+      expect(renter._validRenewedContract(before, after)).to.equal(true);
+    });
     it('return false if contracts are different except for sig', function() {
       var renter = complex.createRenter(options);
       var before = new storj.Contract();
