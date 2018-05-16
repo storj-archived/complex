@@ -43,7 +43,7 @@
     "secp256k1": "^3.2.2",
     "storj-lib": "^8.7.1",
     "storj-mongodb-adapter": "^10.0.0",
-    "storj-service-storage-models": "^11.0.0",
+    "storj-service-storage-models": "^11.0.1",
     "uuid": "^3.0.0"
   },
   "devDependencies": {
